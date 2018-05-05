@@ -25,7 +25,7 @@ exports.encode = function (input) {
 }
 
 /*
-*	Convert
+*	Convert string to number (e.g. "0400" => 1024)
 */
 function safeParseInt (v, base) {
 	if (v.slice(0, 2) === '00') {
@@ -35,6 +35,9 @@ function safeParseInt (v, base) {
 	return parseInt(v, base)
 }
 
+/*
+*	Encode and return the first several indication bytes
+*/
 function encodeLength (len, offset) {
 	if (len < 56) {
 		return Buffer.from([len + offset])
@@ -99,6 +102,9 @@ exports.getLength = function (input) {
 	}
 }
 
+/*
+*	RLP first-indication bytes parser
+*/
 function _decode (input) {
 	var length, llength, data, innerRemainder, d
 	var decoded = []
@@ -182,11 +188,16 @@ function _decode (input) {
 	}
 }
 
+/*
+*	Check whether the string has perfix "0x"
+*/
 function isHexPrefixed (str) {
 	return str.slice(0, 2) === '0x'
 }
 
-// Removes 0x from a given String
+/*
+*	Removes 0x from a given String
+*/
 function stripHexPrefix (str) {
 	if (typeof str !== 'string') {
 		return str
@@ -194,6 +205,9 @@ function stripHexPrefix (str) {
 	return isHexPrefixed(str) ? str.slice(2) : str
 }
 
+/*
+*	Convert number to hex format string and compensate the length even (e.g. 10 => "0A") 
+*/
 function intToHex (i) {
 	var hex = i.toString(16)
 	if (hex.length % 2) {
@@ -203,16 +217,25 @@ function intToHex (i) {
 	return hex
 }
 
+/*
+*	If the input length is not even, and a "0" in front
+*/
 function padToEven (a) {
 	if (a.length % 2) a = '0' + a
 	return a
 }
 
+/*
+*	Convert number to hex format string buffer
+*/
 function intToBuffer (i) {
 	var hex = intToHex(i)
 	return Buffer.from(hex, 'hex')
 }
 
+/*
+*	Convert data from other data types to Buffer type
+*/
 function toBuffer (v) {
 	if (!Buffer.isBuffer(v)) {
 		if (typeof v === 'string') {

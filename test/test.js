@@ -6,13 +6,20 @@ const fs = require("fs")
 test('SEC RLP test', t => {
 	t.plan(1)
 	var contents = fs.readFileSync("test_json.json")
-	console.log(rlp.jsonToRlp(contents))
-
-
-	/*var a = [1, [2,3], [4,5,6]]
-	var b = ["a"]
-	console.log(rlp.encode(b))
-
-	console.log(rlp.decode(rlp.encode(b)))*/
-	t.equal(1, 1)
+	var ebook = fs.readFileSync("genesisBlock.json")
+	
+	contents_rlp_encode = rlp.jsonToRlp(contents)
+	contents_json_format = rlp.jsonRlpInit(contents)
+	
+	ebook_rlp_encode = rlp.jsonToRlp(ebook)
+	ebook_json_format = rlp.jsonRlpInit(ebook)
+	
+	console.log("--------------------------")
+	console.log(ebook_rlp_encode)
+	console.log("--------------------------")
+	console.log(ebook_json_format)
+	console.log("--------------------------")
+	
+	t.deepEqual(JSON.parse(contents), JSON.parse(rlp.rlpToJson(contents_rlp_encode, contents_json_format)))
+	//t.deepEqual(JSON.parse(ebook), JSON.parse(rlp.rlpToJson(ebook_rlp_encode, ebook_json_format)))
 })

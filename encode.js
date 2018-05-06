@@ -2,13 +2,13 @@ const Buffer = require('safe-buffer').Buffer
 
 /**
 * jsonToRlp
-* @desc RLP encode for json file
+* @desc RLP encoding for json file
 * @param {Buffer, String, Integer, Array} input - Input is json file raw data (not parsed)
 * @return {Buffer} RLP encoded json data
 */
 exports.jsonToRlp = function (input) {
 	if (isJsonString(input) == false) {
-		throw new Error('invalid JSON file')
+		throw new Error('invalid JSON input')
 	}
 
 	input = JSON.parse(input);
@@ -47,7 +47,7 @@ function isJsonString(input) {
 }
 
 /*
-*	Verify whether "input" has a nested list
+*	Verify whether input has a nested list
 */
 function hasNestedList(v) {
 	if (JSON.stringify(v).indexOf("{") > -1){
@@ -55,6 +55,109 @@ function hasNestedList(v) {
 	}
 	
 	return false
+}
+
+/**
+* jsonRlpInit
+* @desc Create an array with json keys only (for decoding)
+* @param {Buffer, String, Integer, Array} input - Input is json file raw data (not parsed)
+* @return {Array} Nested array comsists of json keys
+*/
+exports.jsonRlpInit = function (input) {
+	if (isJsonString(input) == false) {
+		throw new Error('invalid JSON file')
+	}
+
+	input = JSON.parse(input);
+
+	return jsonKeyRegister(input)
+}
+
+/*
+*	Return an array with json keys only
+*/
+jsonKeyRegister = function (input) {
+	/**********此处应该改?或者不需要，因为内容中肯定不会出现冒号？暂时先用着**************/
+	if (hasNestedKey(input) == false) {
+		return null
+	}
+	var json_array = new Array()
+	
+	Object.keys(input).forEach(function(key, keyIndex) {
+		json_array.push(key)
+		if (hasNestedKey(input[key]) == true) {
+			json_array.push(jsonKeyRegister(input[key]))
+		}
+	})
+	
+	return json_array
+}
+
+/*
+*	Verify whether input is dictionary structure
+*/
+function hasNestedKey(v) {
+	if (JSON.stringify(v).indexOf(":") > -1){
+		return true
+	}
+	
+	return false
+}
+
+/**
+* rlpToJson
+* @desc rlp data structure revert to JSON file
+* @param {Buffer, String, Integer, Array} rlp_input - Input is rlp format data
+* @param {Array} json_key_array - Json format, if this argument is empty, then uses the default format
+* @return {Array} rlp decoded JSON array
+*/
+exports.rlpToJson = function (rlp_input, json_key_array) {
+	decode_result = exports.decode(rlp_input)
+
+	if (json_key_array == null) {
+		json_key_array = [ 'rlpTesttest', [ 'intest', 'outtest' ] ]
+	}
+	
+	if (!(json_key_array instanceof Array)) {
+		throw new Error("invalid input type")
+	}
+	
+	return "".concat("{", combineKeyValue(decode_result, json_key_array), "}")
+}
+
+/*
+*	Combine json key array and value array and return a complete json file
+*/
+function combineKeyValue(decode_result, json_key_array) {
+	var json_array = []
+	//json_key_array length is longer than decode_result, this variable is the index difference between the two arrays
+	index_diff = 0
+	
+	for (var i = 0; i < json_key_array.length; i++) {
+		
+		if (Buffer.isBuffer(decode_result[i - index_diff])) {
+			decode_result[i - index_diff] = decode_result[i - index_diff].toString('utf8')
+		}
+		
+		if ((typeof decode_result[i - index_diff] === 'string') && (typeof json_key_array[i] === 'string')) {
+			json_array.push("\"", json_key_array[i], "\": \"", decode_result[i], "\",")
+		}
+		else if ((decode_result[i - index_diff] instanceof Array) && (json_key_array[i] instanceof Array)) {
+			json_array.push("{")
+			var return_result = combineKeyValue(decode_result[i - index_diff], json_key_array[i])
+			json_array.push(return_result.slice(0, return_result.length - 1))	//remove the last comma
+			json_array.push("}")
+		}
+		else if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] === 'string')) {
+			json_array.push("\"", json_key_array[i], "\": ")
+			index_diff++
+		}
+		else {
+			throw new Error("Unknown error, debug for more information")
+		}
+	}
+	
+	return json_array.join("")
 }
 
 /**

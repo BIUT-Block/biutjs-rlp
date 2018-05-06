@@ -1,6 +1,63 @@
 const Buffer = require('safe-buffer').Buffer
 
 /**
+* jsonToRlp
+* @desc RLP encode for json file
+* @param {Buffer, String, Integer, Array} input - Input is json file raw data (not parsed)
+* @return {Buffer} RLP encoded json data
+*/
+exports.jsonToRlp = function (input) {
+	if (isJsonString(input) == false) {
+		throw new Error('invalid JSON file')
+	}
+
+	input = JSON.parse(input);
+	
+	var json_array = jsonToArray(input)
+	
+	return exports.encode(json_array)
+}
+
+/*
+*	Remove keys in json file and return a nested array
+*/
+jsonToArray = function (input) {
+	if (hasNestedList(input) == false) {
+		return input
+	}
+	var json_array = new Array()
+	
+	Object.keys(input).forEach(function(key, keyIndex) {
+		json_array.push(jsonToArray(input[key]))
+	})
+	
+	return json_array
+}
+
+/*
+*	Verify whether "input" is in json format
+*/
+function isJsonString(input) {
+    try {
+        JSON.parse(input);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
+/*
+*	Verify whether "input" has a nested list
+*/
+function hasNestedList(v) {
+	if (JSON.stringify(v).indexOf("{") > -1){
+		return true
+	}
+	
+	return false
+}
+
+/**
 * encode
 * @desc Returns input in RLP encoded structure
 * @param {Buffer, String, Integer, Array} input - Input data for RLP encode
@@ -64,7 +121,7 @@ exports.decode = function (input) {
 	input = toBuffer(input)
 	var decoded = _decode(input)
 
-	if (decoded.remainder.length == 0) {
+	if (decoded.remainder.length != 0) {
 		throw new Error('invalid remainder')
 	}
 

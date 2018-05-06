@@ -11,8 +11,7 @@ json文件由RLP编码过以后，由于json文件的键值被去掉了，仅保
 
 2.	RLP解码：decode(input) => Array
 	输入可以是{Buffer,String,Integer,Array}，无论哪种类型，都会被先转换为Buffer类型再进行处理
-	作用与encode相反，将RLP格式的数据进行解码
-	输出为Array类型，即使编码的数据类型为string，经过编码解码后返回结果也为Array
+	作用与encode相反，将RLP格式的数据进行解码, 输出为Array类型
 
 3.	获取长度函数: getLength(input) => number
 	input为经过RLP编码后的数据结构

@@ -82,17 +82,6 @@ exports.encode = function (input) {
 }
 
 /*
-*	Convert string to number (e.g. "0400" => 1024)
-*/
-function safeParseInt (v, base) {
-	if (v.slice(0, 2) === '00') {
-		throw (new Error('invalid RLP: extra zeros'))
-	}
-
-	return parseInt(v, base)
-}
-
-/*
 *	Encode and return the first several indication bytes
 */
 function encodeLength (len, offset) {
@@ -105,7 +94,6 @@ function encodeLength (len, offset) {
 		return Buffer.from(firstByte + hexLength, 'hex')
 	}
 }
-
 
 /**
 * decode
@@ -126,37 +114,6 @@ exports.decode = function (input) {
 	}
 
 	return decoded.data
-}
-
-
-/**
-* getLength
-* @desc Returns input's length according to the first several indication bytes(length does not include the first several indication bytes)
-* @param {Buffer, String, Integer, Array} input - Input should be in RLP encoded structure, or the length will be wrong
-* @return {Number}
-*/
-exports.getLength = function (input) {
-	if (!input || input.length === 0) {
-		return Buffer.from([])
-	}
-
-	input = toBuffer(input)
-	var firstByte = input[0]
-	if (firstByte <= 0x7f) {
-		return input.length
-	} else if (firstByte <= 0xb7) {
-		return firstByte - 0x7f
-	} else if (firstByte <= 0xbf) {
-		return firstByte - 0xb6
-	} else if (firstByte <= 0xf7) {
-		// a list between  0-55 bytes long
-		return firstByte - 0xbf
-	} else {
-		// a list  over 55 bytes long
-		var llength = firstByte - 0xf6
-		var length = safeParseInt(input.slice(1, llength).toString('hex'), 16)
-		return llength + length
-	}
 }
 
 /*
@@ -245,49 +202,39 @@ function _decode (input) {
 	}
 }
 
-/*
-*	Check whether the string has perfix "0x"
+/**
+* getLength
+* @desc Returns input's length according to the first several indication bytes
+* @param {Buffer, String, Integer, Array} input - Input should be in RLP encoded data, or the returned length is wrong
+* @return {Number}
 */
-function isHexPrefixed (str) {
-	return str.slice(0, 2) === '0x'
-}
-
-/*
-*	Removes 0x from a given String
-*/
-function stripHexPrefix (str) {
-	if (typeof str !== 'string') {
-		return str
-	}
-	return isHexPrefixed(str) ? str.slice(2) : str
-}
-
-/*
-*	Convert number to hex format string and compensate the length even (e.g. 10 => "0A") 
-*/
-function intToHex (i) {
-	var hex = i.toString(16)
-	if (hex.length % 2) {
-		hex = '0' + hex
+exports.getLength = function (input) {
+	if (!input || input.length === 0) {
+		return Buffer.from([])
 	}
 
-	return hex
-}
-
-/*
-*	If the input length is not even, and a "0" in front
-*/
-function padToEven (a) {
-	if (a.length % 2) a = '0' + a
-	return a
-}
-
-/*
-*	Convert number to hex format string buffer
-*/
-function intToBuffer (i) {
-	var hex = intToHex(i)
-	return Buffer.from(hex, 'hex')
+	input = toBuffer(input)
+	var firstByte = input[0]
+	if (firstByte <= 0x7f) {
+		//a character has a value smaller than 128
+		return input.length
+	} else if (firstByte <= 0xb7) {
+		//a string between 0-55 bytes long
+		return firstByte - 0x7f
+	} else if (firstByte <= 0xbf) {
+		//a string over 55 bytes long
+		var llength = firstByte - 0xb6
+		var length = safeParseInt(input.slice(1, llength).toString('hex'), 16)
+		return llength + length
+	} else if (firstByte <= 0xf7) {
+		// a list between  0-55 bytes long
+		return firstByte - 0xbf
+	} else {
+		// a list over 55 bytes long
+		var llength = firstByte - 0xf6
+		var length = safeParseInt(input.slice(1, llength).toString('hex'), 16)
+		return llength + length
+	}
 }
 
 /*
@@ -317,4 +264,60 @@ function toBuffer (v) {
 		}
 	}
 	return v
+}
+
+/*
+*	Convert number to hex format string buffer
+*/
+function intToBuffer (i) {
+	var hex = intToHex(i)
+	return Buffer.from(hex, 'hex')
+}
+
+/*
+*	If the input length is not even, and a "0" in front
+*/
+function padToEven (a) {
+	if (a.length % 2) a = '0' + a
+	return a
+}
+
+/*
+*	Removes 0x from a given String
+*/
+function stripHexPrefix (str) {
+	if (typeof str !== 'string') {
+		return str
+	}
+	return isHexPrefixed(str) ? str.slice(2) : str
+}
+
+/*
+*	Check whether the string has perfix "0x"
+*/
+function isHexPrefixed (str) {
+	return str.slice(0, 2) === '0x'
+}
+
+/*
+*	Convert number to hex format string and compensate the length even (e.g. 10 => "0A") 
+*/
+function intToHex (i) {
+	var hex = i.toString(16)
+	if (hex.length % 2) {
+		hex = '0' + hex
+	}
+
+	return hex
+}
+
+/*
+*	Convert string to number (e.g. "0400" => 1024)
+*/
+function safeParseInt (v, base) {
+	if (v.slice(0, 2) === '00') {
+		throw (new Error('invalid RLP: extra zeros'))
+	}
+
+	return parseInt(v, base)
 }

@@ -14,5 +14,5 @@ json文件由RLP编码过以后，由于json文件的键值被去掉了，仅保
 	作用与encode相反，将RLP格式的数据进行解码, 输出为Array类型
 
 3.	获取长度函数: getLength(input) => number
-	input为经过RLP编码后的数据结构
-	函数根据前几个字节的值获取整个input数据的长度（长度不包括前几个字节）
+	input为经过RLP编码后的数据
+	函数根据前几个字节的值获取整个input数据的长度

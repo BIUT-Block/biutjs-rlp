@@ -14,7 +14,7 @@ exports.jsonToRlp = function (input) {
 	input = JSON.parse(input);
 	
 	var json_array = jsonToArray(input)
-	
+
 	return exports.encode(json_array)
 }
 
@@ -22,12 +22,22 @@ exports.jsonToRlp = function (input) {
 *	Remove keys in json file and return a nested array
 */
 jsonToArray = function (input) {
+	var json_array = new Array()
+	
 	if (hasNestedList(input) == false) {
 		return input
 	}
-	var json_array = new Array()
+	if (input instanceof Array) {
+		input.forEach(function(element) {
+		  json_array.push(jsonToArray(element))
+		})
+		return json_array
+	}
 	
 	Object.keys(input).forEach(function(key, keyIndex) {
+		if (typeof input[key] == 'number') {
+			input[key] = input[key].toString()
+		}
 		json_array.push(jsonToArray(input[key]))
 	})
 	
@@ -77,14 +87,24 @@ exports.jsonRlpInit = function (input) {
 *	Return an array with json keys only
 */
 jsonKeyRegister = function (input) {
+	var json_array = new Array()
+	
 	/**********此处应该改?或者不需要，因为内容中肯定不会出现冒号？暂时先用着**************/
 	if (hasNestedKey(input) == false) {
 		return null
 	}
-	var json_array = new Array()
+	
+	if (input instanceof Array) {
+		input.forEach(function(element) {
+		  json_array.push(jsonKeyRegister(element))
+		})
+		return json_array
+	}
 	
 	Object.keys(input).forEach(function(key, keyIndex) {
-		json_array.push(key)
+		if (key != '0') {
+			json_array.push(key)
+		}
 		if (hasNestedKey(input[key]) == true) {
 			json_array.push(jsonKeyRegister(input[key]))
 		}
@@ -142,17 +162,27 @@ function combineKeyValue(decode_result, json_key_array) {
 		if ((typeof decode_result[i - index_diff] === 'string') && (typeof json_key_array[i] === 'string')) {
 			json_array.push("\"", json_key_array[i], "\": \"", decode_result[i], "\",")
 		}
-		else if ((decode_result[i - index_diff] instanceof Array) && (json_key_array[i] instanceof Array)) {
-			json_array.push("{")
-			var return_result = combineKeyValue(decode_result[i - index_diff], json_key_array[i])
-			json_array.push(return_result.slice(0, return_result.length - 1))	//remove the last comma
-			json_array.push("}")
-		}
 		else if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] === 'string')) {
 			json_array.push("\"", json_key_array[i], "\": ")
 			index_diff++
 		}
+		else if ((decode_result[i - index_diff] instanceof Array) && (json_key_array[i] instanceof Array)) {
+			if (json_key_array[i][0] instanceof Array) {
+				json_array.push("[")
+				var return_result = combineKeyValue(decode_result[i - index_diff], json_key_array[i])
+				json_array.push(return_result.slice(0, return_result.length - 1))	//remove the last comma
+				json_array.push("]")
+			} else {
+				json_array.push("{")
+				var return_result = combineKeyValue(decode_result[i - index_diff], json_key_array[i])
+				json_array.push(return_result.slice(0, return_result.length - 1))	//remove the last comma
+				json_array.push("},")
+			}
+			
+		}
 		else {
+			console.log(decode_result[i - index_diff])
+			console.log(json_key_array[i])
 			throw new Error("Unknown error, debug for more information")
 		}
 	}

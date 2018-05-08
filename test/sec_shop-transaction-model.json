@@ -1,0 +1,21 @@
+{
+    "transHash": "1",
+    "transtimeStamp": "2",
+    "dealerAddress": "3",
+    "buyerAddress": "4",
+    "shareActionId": "5",
+    "shareTimeStamp": "6",
+    "productInfo": {
+        "productName": "7",
+        "productCategory": "8",
+        "productDealer": "9",
+        "shopName": "10",
+        "productBuyer": "a",
+        "productCode": "b",
+        "price": "c",
+        "currency": "d",
+        "productDetail": "e"
+    },  
+    "sharedTimes": "f",
+    "status": "g"
+}

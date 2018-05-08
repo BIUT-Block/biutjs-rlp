@@ -1,5 +1,3 @@
-const Buffer = require('safe-buffer').Buffer
-
 /**
 * jsonToRlp
 * @desc RLP encoding for json file
@@ -24,16 +22,18 @@ exports.jsonToRlp = function (input) {
 jsonToArray = function (input) {
 	var json_array = new Array()
 	
-	if (hasNestedList(input) == false) {
+	if (hasNestedStruct(input) == false) {
 		return input
 	}
 	if (input instanceof Array) {
+		json_array.push("1")		//Assume "1" = 0x31 is for array
 		input.forEach(function(element) {
 		  json_array.push(jsonToArray(element))
 		})
 		return json_array
 	}
 	
+	json_array.push("2")		//Assume "2" = 0x32 is for dictionary
 	Object.keys(input).forEach(function(key, keyIndex) {
 		if (typeof input[key] == 'number') {
 			input[key] = input[key].toString()
@@ -57,10 +57,10 @@ function isJsonString(input) {
 }
 
 /*
-*	Verify whether input has a nested list
+*	Verify whether input has a nested array or object
 */
-function hasNestedList(v) {
-	if (JSON.stringify(v).indexOf("{") > -1){
+function hasNestedStruct(v) {
+	if ((JSON.stringify(v).indexOf("{") > -1) || (JSON.stringify(v).indexOf("[") > -1)) {
 		return true
 	}
 	
@@ -89,18 +89,19 @@ exports.jsonRlpInit = function (input) {
 jsonKeyRegister = function (input) {
 	var json_array = new Array()
 	
-	/**********此处应该改?或者不需要，因为内容中肯定不会出现冒号？暂时先用着**************/
-	if (hasNestedKey(input) == false) {
+	if (hasNestedStruct(input) == false) {
 		return null
 	}
 	
 	if (input instanceof Array) {
+		json_array.push("1")		//Assume "1" = 0x31 is for array
 		input.forEach(function(element) {
 		  json_array.push(jsonKeyRegister(element))
 		})
 		return json_array
 	}
 	
+	json_array.push("2")		//Assume "2" = 0x32 is for dictionary
 	Object.keys(input).forEach(function(key, keyIndex) {
 		if (key != '0') {
 			json_array.push(key)
@@ -134,60 +135,88 @@ function hasNestedKey(v) {
 exports.rlpToJson = function (rlp_input, json_key_array) {
 	decode_result = exports.decode(rlp_input)
 
-	if (json_key_array == null) {
+	/*if (json_key_array == null) {
 		json_key_array = [ 'rlpTesttest', [ 'intest', 'outtest' ] ]
-	}
+	}*/
 	
 	if (!(json_key_array instanceof Array)) {
 		throw new Error("invalid input type")
 	}
 	
-	return "".concat("{", combineKeyValue(decode_result, json_key_array), "}")
+	return "".concat("{", combineKeyValue(decode_result.slice(1), json_key_array.slice(1)), "}")
 }
 
 /*
 *	Combine json key array and value array and return a complete json file
 */
 function combineKeyValue(decode_result, json_key_array) {
+	
 	var json_array = []
 	//json_key_array length is longer than decode_result, this variable is the index difference between the two arrays
-	index_diff = 0
+	var index_diff = 0
 	
 	for (var i = 0; i < json_key_array.length; i++) {
-		
+	
 		if (Buffer.isBuffer(decode_result[i - index_diff])) {
 			decode_result[i - index_diff] = decode_result[i - index_diff].toString('utf8')
 		}
 		
 		if ((typeof decode_result[i - index_diff] === 'string') && (typeof json_key_array[i] === 'string')) {
-			json_array.push("\"", json_key_array[i], "\": \"", decode_result[i], "\",")
+			console.log("first loop")
+			json_array.push("\"", json_key_array[i], "\": \"", decode_result[i - index_diff], "\",")
 		}
 		else if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] === 'string')) {
+			console.log("second loop")
 			json_array.push("\"", json_key_array[i], "\": ")
 			index_diff++
 		}
 		else if ((decode_result[i - index_diff] instanceof Array) && (json_key_array[i] instanceof Array)) {
-			if (json_key_array[i][0] instanceof Array) {
+			console.log("third loop")
+			if ((json_key_array[i][0] == "1") && (decode_result[i - index_diff][0] == "1")) {		//it's array
 				json_array.push("[")
-				var return_result = combineKeyValue(decode_result[i - index_diff], json_key_array[i])
-				json_array.push(return_result.slice(0, return_result.length - 1))	//remove the last comma
-				json_array.push("]")
-			} else {
+				json_array.push(combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
+				json_array.push("],")
+			} else if ((json_key_array[i][0] == "2") && (decode_result[i - index_diff][0] == "2")) {
 				json_array.push("{")
-				var return_result = combineKeyValue(decode_result[i - index_diff], json_key_array[i])
-				json_array.push(return_result.slice(0, return_result.length - 1))	//remove the last comma
+				json_array.push(combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
 				json_array.push("},")
+			} else {
+				throw new Error("RLP data and JSON format does not match")
 			}
-			
 		}
 		else {
-			console.log(decode_result[i - index_diff])
-			console.log(json_key_array[i])
 			throw new Error("Unknown error, debug for more information")
 		}
 	}
+
+	if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] == 'undefined')) {
+		console.log("fourth loop")
+		json_array.push("[", arrayToJSONString(decode_result[i - index_diff].slice(1)), "],")
+	}
+
+	result = json_array.join("")
 	
-	return json_array.join("")
+	return result.slice(0, result.length - 1)
+}
+
+function arrayToJSONString(input_array){
+	var result_array = []
+	
+	if (!(input_array instanceof Array)) {
+		return result_array.push("\"", input_array, "\",")
+	}
+	
+	input_array.forEach(function(element) {
+		if (!(element instanceof Array)) {
+			result_array.push("\"", element, "\",")
+		} else {
+			result_array.push("[", arrayToJSONString(element), "],")
+		}
+	})
+	
+	result = result_array.join("")
+
+	return result.slice(0, result.length - 1)
 }
 
 /**
@@ -253,6 +282,7 @@ exports.decode = function (input) {
 *	RLP first-indication bytes parser
 */
 function _decode (input) {
+	
 	var length, llength, data, innerRemainder, d
 	var decoded = []
 	var firstByte = input[0]
@@ -300,7 +330,7 @@ function _decode (input) {
 		length = firstByte - 0xbf
 		innerRemainder = input.slice(1, length)
 		while (innerRemainder.length) {
-			d = _decode(innerRemainder)
+			d = _decode(innerRemainder)	
 			decoded.push(d.data)
 			innerRemainder = d.remainder
 		}

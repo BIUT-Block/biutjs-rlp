@@ -22,20 +22,24 @@
       "id": "5534571359943011068"
     },
     {
-      "type": 2,
+      "type": 3,
       "amount": 0,
       "fee": 0,
       "timestamp": 0,
-      "recipientId": null,
-      "senderId": "13689350125727268512L",
-      "senderPublicKey": "8b3aa957ff8806a8f746acc579385fbf1296de9a604ac99917129f2faf937f1b",
+      "recipientId": "6722322622037743544L",
+      "senderId": "6722322622037743544L",
+      "senderPublicKey": "3ed4d689ced148a97017e2f611b5c4aa28de1564a92fca8234d32290319dbdb3",
       "asset": {
-        "delegate": {
-          "username": "genesisDelegate51"
-        }
+        "votes": [
+          "+3319e5bb7b26eda2f3ba91d55536e8260b58bb37b968233823c2ba588200459f",
+          "+bc44fa5b992baf83dde027d772a0f86db1020025ecb79273abf1df815ad5f723"
+        ]
       },
-      "signature": "d04ad75f229cbd93570612b7586ea5c13f44a26e9cfad7875580499bc9bac03811f1990cdf6a7b7f76cb1826473224334eabd3ac9b3ddcc39f3852e836956404",
-      "id": "9198061231590533593"
+      "signature": "96e1da0134268b02981292b1235dbc07c7dc0acdd348f15a89bc0617bc1361023a8445414843e54d429fa3380f46da9063ed0f4f549e39ae79efef5262301b00",
+      "id": "10175549538740098435"
     }
-  ]
+  ],
+  "height": 1,
+  "blockSignature": "2985d896becdb91c283cc2366c4a387a257b7d4751f995a81eae3aa705bc24fdb950c3afbed833e7d37a0a18074da461d68d74a3a223bc5f8e9c1fed2f3fec0e",
+  "id": "8593810399212843182"
 }

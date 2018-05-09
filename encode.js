@@ -18,6 +18,7 @@ exports.jsonToRlp = function (input) {
 
 /*
 *	Remove keys in json file and return a nested array
+*	Notice: For each nested layer, there is an extra indication byte to distinguish "array"(1 = 0x31) and "dict"(2 = 0x32) types
 */
 jsonToArray = function (input) {
 	var json_array = new Array()
@@ -57,7 +58,7 @@ function isJsonString(input) {
 }
 
 /*
-*	Verify whether input has a nested array or object
+*	Verify whether input has a nested array or dict
 */
 function hasNestedStruct(v) {
 	if ((JSON.stringify(v).indexOf("{") > -1) || (JSON.stringify(v).indexOf("[") > -1)) {
@@ -68,12 +69,12 @@ function hasNestedStruct(v) {
 }
 
 /**
-* jsonRlpInit
-* @desc Create an array with json keys only (for decoding)
+* jsonKeyArray
+* @desc Extract and create an array with json keys only (for decoding)
 * @param {Buffer, String, Integer, Array} input - Input is json file raw data (not parsed)
 * @return {Array} Nested array comsists of json keys
 */
-exports.jsonRlpInit = function (input) {
+exports.jsonKeyArray = function (input) {
 	if (isJsonString(input) == false) {
 		throw new Error('invalid JSON file')
 	}
@@ -85,6 +86,7 @@ exports.jsonRlpInit = function (input) {
 
 /*
 *	Return an array with json keys only
+*	Notice: For each nested layer, there is an extra indication byte to distinguish "array"(1 = 0x31) and "dict"(2 = 0x32) types
 */
 jsonKeyRegister = function (input) {
 	var json_array = new Array()
@@ -127,10 +129,10 @@ function hasNestedKey(v) {
 
 /**
 * rlpToJson
-* @desc rlp data structure revert to JSON file
-* @param {Buffer, String, Integer, Array} rlp_input - Input is rlp format data
-* @param {Array} json_key_array - Json format, if this argument is empty, then uses the default format
-* @return {Array} rlp decoded JSON array
+* @desc rlp encoded data revert to JSON file
+* @param {Buffer, String, Integer, Array} rlp_input - rlp encoded data
+* @param {Array} json_key_array - Json key array, if this argument is empty, then uses the default format(SEC predefined format)
+* @return {Array} decoded JSON array
 */
 exports.rlpToJson = function (rlp_input, json_key_array) {
 	decode_result = exports.decode(rlp_input)
@@ -156,27 +158,36 @@ function combineKeyValue(decode_result, json_key_array) {
 	var index_diff = 0
 	
 	for (var i = 0; i < json_key_array.length; i++) {
-	
+		
+		//Convert decode_result to string
 		if (Buffer.isBuffer(decode_result[i - index_diff])) {
 			decode_result[i - index_diff] = decode_result[i - index_diff].toString('utf8')
 		}
 		
+		//{"a": "b"} => [a] and [b]
 		if ((typeof decode_result[i - index_diff] === 'string') && (typeof json_key_array[i] === 'string')) {
 			console.log("first loop")
 			json_array.push("\"", json_key_array[i], "\": \"", decode_result[i - index_diff], "\",")
 		}
+		
+		//{"a": {"b": "c"}} => [a, b] and [c]
 		else if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] === 'string')) {
 			console.log("second loop")
 			json_array.push("\"", json_key_array[i], "\": ")
 			index_diff++
 		}
+		
+		//nested array and dict, e.g. {{}} or {[]} or [{}] or [[]]
 		else if ((decode_result[i - index_diff] instanceof Array) && (json_key_array[i] instanceof Array)) {
 			console.log("third loop")
+			//{["a": "b"]} => [[a]], and [[b]] or [["a": "b"]] => [[a]], and [[b]]
 			if ((json_key_array[i][0] == "1") && (decode_result[i - index_diff][0] == "1")) {		//it's array
 				json_array.push("[")
 				json_array.push(combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
 				json_array.push("],")
-			} else if ((json_key_array[i][0] == "2") && (decode_result[i - index_diff][0] == "2")) {
+			} 
+			//{{"a": "b"}} => [[a]], and [[b]] or [{"a": "b"}] => [[a]], and [[b]]
+			else if ((json_key_array[i][0] == "2") && (decode_result[i - index_diff][0] == "2")) {
 				json_array.push("{")
 				json_array.push(combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
 				json_array.push("},")
@@ -189,6 +200,7 @@ function combineKeyValue(decode_result, json_key_array) {
 		}
 	}
 
+	//{"a": {["b"]}} => [a] and [[b]] => "null" and [b]
 	if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] == 'undefined')) {
 		console.log("fourth loop")
 		json_array.push("[", arrayToJSONString(decode_result[i - index_diff].slice(1)), "],")
@@ -196,9 +208,13 @@ function combineKeyValue(decode_result, json_key_array) {
 
 	result = json_array.join("")
 	
+	//remove the last element's comma
 	return result.slice(0, result.length - 1)
 }
 
+/*
+*	Convert nested array to string, e.g. [1,2,[3,4]] => ["1", "2", "[", "3", "4", "]"]
+*/
 function arrayToJSONString(input_array){
 	var result_array = []
 	

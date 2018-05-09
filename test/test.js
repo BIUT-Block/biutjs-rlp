@@ -14,22 +14,22 @@ test('SEC RLP test', t => {
 	var sec_shop = fs.readFileSync("sec_shop-transaction-model.json")
 	
 	contents_rlp_encode = rlp.jsonToRlp(contents)
-	contents_json_format = rlp.jsonRlpInit(contents)
+	contents_json_format = rlp.jsonKeyArray(contents)
 	
 	ebook_rlp_encode = rlp.jsonToRlp(ebook)
-	ebook_json_format = rlp.jsonRlpInit(ebook)
+	ebook_json_format = rlp.jsonKeyArray(ebook)
 	
 	sec_block_rlp_encode = rlp.jsonToRlp(sec_block)
-	sec_block_json_format = rlp.jsonRlpInit(sec_block)
+	sec_block_json_format = rlp.jsonKeyArray(sec_block)
 	
 	sec_shop_rlp_encode = rlp.jsonToRlp(sec_shop)
-	sec_shop_json_format = rlp.jsonRlpInit(sec_shop)
+	sec_shop_json_format = rlp.jsonKeyArray(sec_shop)
 	
 	//js_sec_block_rlp_encode = rlp.jsonToRlp(sec_block_js)
-	//js_sec_block_json_format = rlp.jsonRlpInit(sec_block_js)
+	//js_sec_block_json_format = rlp.jsonKeyArray(sec_block_js)
 	
 	//js_sec_shop_rlp_encode = rlp.jsonToRlp(sec_shop_js)
-	//js_sec_shop_json_format = rlp.jsonRlpInit(sec_shop_js)
+	//js_sec_shop_json_format = rlp.jsonKeyArray(sec_shop_js)
 	
 	if(0){
 		console.log("--------------------------")

@@ -20,7 +20,7 @@ exports.jsonToRlp = function (input) {
 *	Remove keys in json file and return a nested array
 *	Notice: For each nested layer, there is an extra indication byte to distinguish "array"(1 = 0x31) and "dict"(2 = 0x32) types
 */
-jsonToArray = function (input) {
+function jsonToArray(input) {
 	var json_array = new Array()
 	
 	if (hasNestedStruct(input) == false) {
@@ -88,7 +88,7 @@ exports.jsonKeyArray = function (input) {
 *	Return an array with json keys only
 *	Notice: For each nested layer, there is an extra indication byte to distinguish "array"(1 = 0x31) and "dict"(2 = 0x32) types
 */
-jsonKeyRegister = function (input) {
+function jsonKeyRegister(input) {
 	var json_array = new Array()
 	
 	if (hasNestedStruct(input) == false) {
@@ -297,7 +297,7 @@ exports.decode = function (input) {
 /*
 *	RLP first-indication bytes parser
 */
-function _decode (input) {
+function _decode(input) {
 	
 	var length, llength, data, innerRemainder, d
 	var decoded = []

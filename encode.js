@@ -1,4 +1,5 @@
-
+const txTransModel = require('./model/transactionchain-trans-model')
+const txBlockModel = require('./model/transactionchain-block-model')
 
 class SECRlpEncode {
 	/**

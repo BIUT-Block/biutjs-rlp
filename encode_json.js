@@ -19,13 +19,13 @@ class SECRlpEncode {
     * @return {Buffer} RLP encoded json data
     */
     jsonToRlp(input) {
-        if (this.isJsonString(input) == false) {
+        if (this._isJsonString(input) == false) {
             throw new Error('invalid JSON input')
         }
 
         input = JSON.parse(input);
         
-        let json_array = this.jsonToArray(input)
+        let json_array = this._jsonToArray(input)
 
         return this.encode(json_array)
     }
@@ -34,16 +34,16 @@ class SECRlpEncode {
     *   Remove keys in json file and return a nested array
     *   Notice: For each nested layer, there is an extra indication byte to distinguish "array"(1 = 0x31) and "dict"(2 = 0x32) types
     */
-    jsonToArray(input) {
+    _jsonToArray(input) {
         let json_array = new Array()
         
-        if (this.hasNestedStruct(input) == false) {
+        if (this._hasNestedStruct(input) == false) {
             return input
         }
         if (input instanceof Array) {
             json_array.push("1")        //Assume "1" = 0x31 is for array
             input.forEach(function(element) {
-              json_array.push(this.jsonToArray(element))
+              json_array.push(this._jsonToArray(element))
             }.bind(this))
             return json_array
         }
@@ -53,7 +53,7 @@ class SECRlpEncode {
             if (typeof input[key] == 'number') {
                 input[key] = input[key].toString()
             }
-            json_array.push(this.jsonToArray(input[key]))
+            json_array.push(this._jsonToArray(input[key]))
         }.bind(this))
         
         return json_array
@@ -62,7 +62,7 @@ class SECRlpEncode {
     /*
     *   Verify whether "input" is in json format
     */
-    isJsonString(input) {
+    _isJsonString(input) {
         try {
             JSON.parse(input);
         } catch (e) {
@@ -74,7 +74,7 @@ class SECRlpEncode {
     /*
     *   Verify whether input has a nested array or dict
     */
-    hasNestedStruct(v) {
+    _hasNestedStruct(v) {
         if ((JSON.stringify(v).indexOf("{") > -1) || (JSON.stringify(v).indexOf("[") > -1)) {
             return true
         }
@@ -89,30 +89,30 @@ class SECRlpEncode {
     * @return {Array} Nested array comsists of json keys
     */
     jsonKeyArray(input) {
-        if (this.isJsonString(input) == false) {
+        if (this._isJsonString(input) == false) {
             throw new Error('invalid JSON file')
         }
 
         input = JSON.parse(input);
 
-        return this.jsonKeyRegister(input)
+        return this._jsonKeyRegister(input)
     }
 
     /*
     *   Return an array with json keys only
     *   Notice: For each nested layer, there is an extra indication byte to distinguish "array"(1 = 0x31) and "dict"(2 = 0x32) types
     */
-    jsonKeyRegister(input) {
+    _jsonKeyRegister(input) {
         let json_array = new Array()
         
-        if (this.hasNestedStruct(input) == false) {
+        if (this._hasNestedStruct(input) == false) {
             return null
         }
         
         if (input instanceof Array) {
             json_array.push("1")        //Assume "1" = 0x31 is for array
             input.forEach(function(element) {
-              json_array.push(this.jsonKeyRegister(element))
+              json_array.push(this._jsonKeyRegister(element))
             }.bind(this))
             return json_array
         }
@@ -122,8 +122,8 @@ class SECRlpEncode {
             if (key != '0') {
                 json_array.push(key)
             }
-            if (this.hasNestedKey(input[key]) == true) {
-                json_array.push(this.jsonKeyRegister(input[key]))
+            if (this._hasNestedKey(input[key]) == true) {
+                json_array.push(this._jsonKeyRegister(input[key]))
             }
         }.bind(this))
         
@@ -133,7 +133,7 @@ class SECRlpEncode {
     /*
     *   Verify whether input is dictionary structure
     */
-    hasNestedKey(v) {
+    _hasNestedKey(v) {
         if (JSON.stringify(v).indexOf(":") > -1){
             return true
         }
@@ -159,13 +159,13 @@ class SECRlpEncode {
             throw new Error("invalid input type")
         }
         
-        return "".concat("{", this.combineKeyValue(decode_result.slice(1), json_key_array.slice(1)), "}")
+        return "".concat("{", this._combineKeyValue(decode_result.slice(1), json_key_array.slice(1)), "}")
     }
 
     /*
     *   Combine json key array and value array and return a complete json file
     */
-    combineKeyValue(decode_result, json_key_array) {
+    _combineKeyValue(decode_result, json_key_array) {
         
         let json_array = []
         //json_key_array length is longer than decode_result, this variable is the index difference between the two arrays
@@ -198,13 +198,13 @@ class SECRlpEncode {
                 //{["a": "b"]} => [[a]], and [[b]] or [["a": "b"]] => [[a]], and [[b]]
                 if ((json_key_array[i][0] == "1") && (decode_result[i - index_diff][0] == "1")) {       //it's array
                     json_array.push("[")
-                    json_array.push(this.combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
+                    json_array.push(this._combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
                     json_array.push("],")
                 } 
                 //{{"a": "b"}} => [[a]], and [[b]] or [{"a": "b"}] => [[a]], and [[b]]
                 else if ((json_key_array[i][0] == "2") && (decode_result[i - index_diff][0] == "2")) {
                     json_array.push("{")
-                    json_array.push(this.combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
+                    json_array.push(this._combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
                     json_array.push("},")
                 } else {
                     throw new Error("RLP data and JSON format does not match")
@@ -218,7 +218,7 @@ class SECRlpEncode {
         //{"a": {["b"]}} => [a] and [[b]] => "null" and [b]
         if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] == 'undefined')) {
             console.log("fourth loop")
-            json_array.push("[", this.arrayToJSONString(decode_result[i - index_diff].slice(1)), "],")
+            json_array.push("[", this._arrayToJSONString(decode_result[i - index_diff].slice(1)), "],")
         }
 
         let result = json_array.join("")
@@ -230,7 +230,7 @@ class SECRlpEncode {
     /*
     *   Convert nested array to string, e.g. [1,2,[3,4]] => ["1", "2", "[", "3", "4", "]"]
     */
-    arrayToJSONString(input_array){
+    _arrayToJSONString(input_array){
         let result_array = []
         
         if (!(input_array instanceof Array)) {
@@ -241,7 +241,7 @@ class SECRlpEncode {
             if (!(element instanceof Array)) {
                 result_array.push("\"", element, "\",")
             } else {
-                result_array.push("[", this.arrayToJSONString(element), "],")
+                result_array.push("[", this._arrayToJSONString(element), "],")
             }
         }.bind(this))
         
@@ -263,13 +263,13 @@ class SECRlpEncode {
                 output.push(this.encode(input[i]))
             }
             let buf = Buffer.concat(output)
-            return Buffer.concat([this.encodeLength(buf.length, 192), buf])
+            return Buffer.concat([this._encodeLength(buf.length, 192), buf])
         } else {
-            input = this.toBuffer(input)
+            input = this._toBuffer(input)
             if (input.length === 1 && input[0] < 128) {
                 return input
             } else {
-                return Buffer.concat([this.encodeLength(input.length, 128), input])
+                return Buffer.concat([this._encodeLength(input.length, 128), input])
             }
         }
     }
@@ -277,13 +277,13 @@ class SECRlpEncode {
     /*
     *   Encode and return the first several indication bytes
     */
-    encodeLength(len, offset) {
+    _encodeLength(len, offset) {
         if (len < 56) {
             return Buffer.from([len + offset])
         } else {
-            let hexLength = this.intToHex(len)
+            let hexLength = this._intToHex(len)
             let lLength = hexLength.length / 2
-            let firstByte = this.intToHex(offset + 55 + lLength)
+            let firstByte = this._intToHex(offset + 55 + lLength)
             return Buffer.from(firstByte + hexLength, 'hex')
         }
     }
@@ -299,7 +299,7 @@ class SECRlpEncode {
             return Buffer.from([])
         }
 
-        input = this.toBuffer(input)
+        input = this._toBuffer(input)
         let decoded = this._decode(input)
 
         if (decoded.remainder.length != 0) {
@@ -346,7 +346,7 @@ class SECRlpEncode {
             }
         } else if (firstByte <= 0xbf) {
             llength = firstByte - 0xb6
-            length = this.safeParseInt(input.slice(1, llength).toString('hex'), 16)
+            length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
             data = input.slice(llength, length + llength)
             if (data.length < length) {
                 throw (new Error('invalid RLP'))
@@ -373,7 +373,7 @@ class SECRlpEncode {
         } else {
             // a list  over 55 bytes long
             llength = firstByte - 0xf6
-            length = this.safeParseInt(input.slice(1, llength).toString('hex'), 16)
+            length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
             let totalLength = llength + length
             if (totalLength > input.length) {
                 throw new Error('invalid rlp: total length is larger than the data')
@@ -407,7 +407,7 @@ class SECRlpEncode {
             return Buffer.from([])
         }
 
-        input = this.toBuffer(input)
+        input = this._toBuffer(input)
         let firstByte = input[0]
         if (firstByte <= 0x7f) {
             //a character has a value smaller than 128
@@ -418,7 +418,7 @@ class SECRlpEncode {
         } else if (firstByte <= 0xbf) {
             //a string over 55 bytes long
             let llength = firstByte - 0xb6
-            let length = this.safeParseInt(input.slice(1, llength).toString('hex'), 16)
+            let length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
             return llength + length
         } else if (firstByte <= 0xf7) {
             // a list between  0-55 bytes long
@@ -426,7 +426,7 @@ class SECRlpEncode {
         } else {
             // a list over 55 bytes long
             let llength = firstByte - 0xf6
-            let length = this.safeParseInt(input.slice(1, llength).toString('hex'), 16)
+            let length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
             return llength + length
         }
     }
@@ -434,11 +434,11 @@ class SECRlpEncode {
     /*
     *   Convert data from other data types to Buffer type
     */
-    toBuffer(v) {
+    _toBuffer(v) {
         if (!Buffer.isBuffer(v)) {
             if (typeof v === 'string') {
-                if (this.isHexPrefixed(v)) {
-                    v = Buffer.from(this.padToEven(this.stripHexPrefix(v)), 'hex')
+                if (this._isHexPrefixed(v)) {
+                    v = Buffer.from(this._padToEven(this._stripHexPrefix(v)), 'hex')
                 } else {
                     v = Buffer.from(v)
                 }
@@ -446,7 +446,7 @@ class SECRlpEncode {
             if (!v) {
                 v = Buffer.from([])
             } else {
-                v = this.intToBuffer(v)
+                v = this._intToBuffer(v)
             }
             } else if (v === null || v === undefined) {
                 v = Buffer.from([])
@@ -463,15 +463,15 @@ class SECRlpEncode {
     /*
     *   Convert number to hex format string buffer
     */
-    intToBuffer(i) {
-        let hex = this.intToHex(i)
+    _intToBuffer(i) {
+        let hex = this._intToHex(i)
         return Buffer.from(hex, 'hex')
     }
 
     /*
     *   If the input length is not even, and a "0" in front
     */
-    padToEven (a){
+    _padToEven (a){
         if (a.length % 2) a = '0' + a
         return a
     }
@@ -479,24 +479,24 @@ class SECRlpEncode {
     /*
     *   Removes 0x from a given String
     */
-    stripHexPrefix(str) {
+    _stripHexPrefix(str) {
         if (typeof str !== 'string') {
             return str
         }
-        return this.isHexPrefixed(str) ? str.slice(2) : str
+        return this._isHexPrefixed(str) ? str.slice(2) : str
     }
 
     /*
     *   Check whether the string has perfix "0x"
     */
-    isHexPrefixed (str) {
+    _isHexPrefixed (str) {
         return str.slice(0, 2) === '0x'
     }
 
     /*
     *   Convert number to hex format string and compensate the length even (e.g. 10 => "0A") 
     */
-    intToHex(i) {
+    _intToHex(i) {
         let hex = i.toString(16)
         if (hex.length % 2) {
             hex = '0' + hex
@@ -508,7 +508,7 @@ class SECRlpEncode {
     /*
     *   Convert string to number (e.g. "0400" => 1024)
     */
-    safeParseInt(v, base) {
+    _safeParseInt(v, base) {
         if (v.slice(0, 2) === '00') {
             throw (new Error('invalid RLP: extra zeros'))
         }

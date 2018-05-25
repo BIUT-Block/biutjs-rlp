@@ -21,13 +21,13 @@ class SECRlpEncode {
                 output.push(this.encode(input[i]))
             }
             let buf = Buffer.concat(output)
-            return Buffer.concat([this.encodeLength(buf.length, 192), buf])
+            return Buffer.concat([this._encodeLength(buf.length, 192), buf])
         } else {
-            input = this.toBuffer(input)
+            input = this._toBuffer(input)
             if (input.length === 1 && input[0] < 128) {
                 return input
             } else {
-                return Buffer.concat([this.encodeLength(input.length, 128), input])
+                return Buffer.concat([this._encodeLength(input.length, 128), input])
             }
         }
     }
@@ -35,13 +35,13 @@ class SECRlpEncode {
     /*
     *   Encode and return the first several indication bytes
     */
-    encodeLength(len, offset) {
+    _encodeLength(len, offset) {
         if (len < 56) {
             return Buffer.from([len + offset])
         } else {
-            let hexLength = this.intToHex(len)
+            let hexLength = this._intToHex(len)
             let lLength = hexLength.length / 2
-            let firstByte = this.intToHex(offset + 55 + lLength)
+            let firstByte = this._intToHex(offset + 55 + lLength)
             return Buffer.from(firstByte + hexLength, 'hex')
         }
     }
@@ -57,7 +57,7 @@ class SECRlpEncode {
             return Buffer.from([])
         }
 
-        input = this.toBuffer(input)
+        input = this._toBuffer(input)
         let decoded = this._decode(input)
 
         if (decoded.remainder.length != 0) {
@@ -104,7 +104,7 @@ class SECRlpEncode {
             }
         } else if (firstByte <= 0xbf) {
             llength = firstByte - 0xb6
-            length = this.safeParseInt(input.slice(1, llength).toString('hex'), 16)
+            length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
             data = input.slice(llength, length + llength)
             if (data.length < length) {
                 throw (new Error('invalid RLP'))
@@ -131,7 +131,7 @@ class SECRlpEncode {
         } else {
             // a list  over 55 bytes long
             llength = firstByte - 0xf6
-            length = this.safeParseInt(input.slice(1, llength).toString('hex'), 16)
+            length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
             let totalLength = llength + length
             if (totalLength > input.length) {
                 throw new Error('invalid rlp: total length is larger than the data')
@@ -165,7 +165,7 @@ class SECRlpEncode {
             return Buffer.from([])
         }
 
-        input = this.toBuffer(input)
+        input = this._toBuffer(input)
         let firstByte = input[0]
         if (firstByte <= 0x7f) {
             //a character has a value smaller than 128
@@ -176,7 +176,7 @@ class SECRlpEncode {
         } else if (firstByte <= 0xbf) {
             //a string over 55 bytes long
             let llength = firstByte - 0xb6
-            let length = this.safeParseInt(input.slice(1, llength).toString('hex'), 16)
+            let length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
             return llength + length
         } else if (firstByte <= 0xf7) {
             // a list between  0-55 bytes long
@@ -184,7 +184,7 @@ class SECRlpEncode {
         } else {
             // a list over 55 bytes long
             let llength = firstByte - 0xf6
-            let length = this.safeParseInt(input.slice(1, llength).toString('hex'), 16)
+            let length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
             return llength + length
         }
     }
@@ -192,11 +192,11 @@ class SECRlpEncode {
     /*
     *   Convert data from other data types to Buffer type
     */
-    toBuffer(v) {
+    _toBuffer(v) {
         if (!Buffer.isBuffer(v)) {
             if (typeof v === 'string') {
-                if (this.isHexPrefixed(v)) {
-                    v = Buffer.from(this.padToEven(this.stripHexPrefix(v)), 'hex')
+                if (this._isHexPrefixed(v)) {
+                    v = Buffer.from(this._padToEven(this._stripHexPrefix(v)), 'hex')
                 } else {
                     v = Buffer.from(v)
                 }
@@ -204,7 +204,7 @@ class SECRlpEncode {
             if (!v) {
                 v = Buffer.from([])
             } else {
-                v = this.intToBuffer(v)
+                v = this._intToBuffer(v)
             }
             } else if (v === null || v === undefined) {
                 v = Buffer.from([])
@@ -221,15 +221,15 @@ class SECRlpEncode {
     /*
     *   Convert number to hex format string buffer
     */
-    intToBuffer(i) {
-        let hex = this.intToHex(i)
+    _intToBuffer(i) {
+        let hex = this._intToHex(i)
         return Buffer.from(hex, 'hex')
     }
 
     /*
     *   If the input length is not even, and a "0" in front
     */
-    padToEven (a){
+    _padToEven (a){
         if (a.length % 2) a = '0' + a
         return a
     }
@@ -237,24 +237,24 @@ class SECRlpEncode {
     /*
     *   Removes 0x from a given String
     */
-    stripHexPrefix(str) {
+    _stripHexPrefix(str) {
         if (typeof str !== 'string') {
             return str
         }
-        return this.isHexPrefixed(str) ? str.slice(2) : str
+        return this._isHexPrefixed(str) ? str.slice(2) : str
     }
 
     /*
     *   Check whether the string has perfix "0x"
     */
-    isHexPrefixed (str) {
+    _isHexPrefixed (str) {
         return str.slice(0, 2) === '0x'
     }
 
     /*
     *   Convert number to hex format string and compensate the length even (e.g. 10 => "0A") 
     */
-    intToHex(i) {
+    _intToHex(i) {
         let hex = i.toString(16)
         if (hex.length % 2) {
             hex = '0' + hex
@@ -266,7 +266,7 @@ class SECRlpEncode {
     /*
     *   Convert string to number (e.g. "0400" => 1024)
     */
-    safeParseInt(v, base) {
+    _safeParseInt(v, base) {
         if (v.slice(0, 2) === '00') {
             throw (new Error('invalid RLP: extra zeros'))
         }

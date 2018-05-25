@@ -1,40 +1,22 @@
-const test = require('tape')
-const rlp = require('../encode')
-const fs = require("fs")
+const assert = require('assert')
+const RLP = require('../encode.js')
 
 
-test('SEC RLP test(unspecified JSON model)', t => {
-    let config = ""
-    let rlpEncode = new rlp(config, true)
-    
-    t.plan(2)
-    var contents = fs.readFileSync("./test_json/test_json.json")
-    var ebook = fs.readFileSync("./test_json/ebook_genesisBlock_origin.json")
-    
-    contents_rlp_encode = rlpEncode.jsonToRlp(contents)
-    contents_json_format = rlpEncode.jsonKeyArray(contents)
-    
-    ebook_rlp_encode = rlpEncode.jsonToRlp(ebook)
-    ebook_json_format = rlpEncode.jsonKeyArray(ebook)
+describe('RLP encoding (string):', function () {
+    let rlp = new RLP()
+    it('should return itself if single byte and less than 0x7f:', function () {
+        var encodedSelf = rlp.encode('a')
+        assert.equal(encodedSelf.toString(), 'a')
+        assert.equal(rlp.getLength(encodedSelf), 1)
+    })
 
-    t.deepEqual(JSON.parse(rlpEncode.rlpToJson(contents_rlp_encode, contents_json_format)), JSON.parse(contents))
-    t.deepEqual(JSON.parse(rlpEncode.rlpToJson(ebook_rlp_encode, ebook_json_format)), JSON.parse(ebook))
+    it('length of string 0-55 should return (0x80+len(data)) plus data', function () {
+        var encodedDog = rlp.encode('dog')
+        assert.equal(4, encodedDog.length)
+        assert.equal(rlp.getLength(encodedDog), 4)
+        assert.equal(encodedDog[0], 131)
+        assert.equal(encodedDog[1], 100)
+        assert.equal(encodedDog[2], 111)
+        assert.equal(encodedDog[3], 103)
+    })
 })
-
-test('SEC RLP test(with SEC defined JSON model)', t => {
-    t.plan(1)
-    
-    t.equal(1,1)
-})
-
-
-
-function display_longbuffer(buffer){
-    var arr = new Array();
-     
-    for (var i = 0; i < buffer.length; i++) {
-        arr.push(buffer[i].toString(16));
-    }
-     
-    console.log(arr.join(' '));
-}

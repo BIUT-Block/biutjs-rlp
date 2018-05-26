@@ -19,7 +19,7 @@ class SECRlpEncode {
             throw new Error('invalid JSON input')
         }
 
-        input = JSON.parse(input);
+        input = JSON.parse(input)
         
         let json_array = this._jsonToArray(input)
 
@@ -28,7 +28,7 @@ class SECRlpEncode {
 
     /*
     *   Remove keys in json file and return a nested array
-    *   Notice: For each nested layer, there is an extra indication byte to distinguish "array"(1 = 0x31) and "dict"(2 = 0x32) types
+    *   Notice: For each nested layer, there is an extra indication byte to distinguish 'array'(1 = 0x31) and 'dict'(2 = 0x32) types
     */
     _jsonToArray(input) {
         let json_array = new Array()
@@ -37,15 +37,15 @@ class SECRlpEncode {
             return input
         }
         if (input instanceof Array) {
-            json_array.push("1")        //Assume "1" = 0x31 is for array
+            json_array.push('1')        //Assume '1' = 0x31 is for array
             input.forEach(function(element) {
-              json_array.push(this._jsonToArray(element))
+                json_array.push(this._jsonToArray(element))
             }.bind(this))
             return json_array
         }
         
-        json_array.push("2")        //Assume "2" = 0x32 is for dictionary
-        Object.keys(input).forEach(function(key, keyIndex) {
+        json_array.push('2')        //Assume '2' = 0x32 is for dictionary
+        Object.keys(input).forEach(function(key) {
             if (typeof input[key] == 'number') {
                 input[key] = input[key].toString()
             }
@@ -56,22 +56,22 @@ class SECRlpEncode {
     }
 
     /*
-    *   Verify whether "input" is in json format
+    *   Verify whether 'input' is in json format
     */
     _isJsonString(input) {
         try {
-            JSON.parse(input);
+            JSON.parse(input)
         } catch (e) {
-            return false;
+            return false
         }
-        return true;
+        return true
     }
 
     /*
     *   Verify whether input has a nested array or dict
     */
     _hasNestedStruct(v) {
-        if ((JSON.stringify(v).indexOf("{") > -1) || (JSON.stringify(v).indexOf("[") > -1)) {
+        if ((JSON.stringify(v).indexOf('{') > -1) || (JSON.stringify(v).indexOf('[') > -1)) {
             return true
         }
         
@@ -89,14 +89,14 @@ class SECRlpEncode {
             throw new Error('invalid JSON file')
         }
 
-        input = JSON.parse(input);
+        input = JSON.parse(input)
 
         return this._jsonKeyRegister(input)
     }
 
     /*
     *   Return an array with json keys only
-    *   Notice: For each nested layer, there is an extra indication byte to distinguish "array"(1 = 0x31) and "dict"(2 = 0x32) types
+    *   Notice: For each nested layer, there is an extra indication byte to distinguish 'array'(1 = 0x31) and 'dict'(2 = 0x32) types
     */
     _jsonKeyRegister(input) {
         let json_array = new Array()
@@ -106,15 +106,15 @@ class SECRlpEncode {
         }
         
         if (input instanceof Array) {
-            json_array.push("1")        //Assume "1" = 0x31 is for array
+            json_array.push('1')        //Assume '1' = 0x31 is for array
             input.forEach(function(element) {
-              json_array.push(this._jsonKeyRegister(element))
+                json_array.push(this._jsonKeyRegister(element))
             }.bind(this))
             return json_array
         }
         
-        json_array.push("2")        //Assume "2" = 0x32 is for dictionary
-        Object.keys(input).forEach(function(key, keyIndex) {
+        json_array.push('2')        //Assume '2' = 0x32 is for dictionary
+        Object.keys(input).forEach(function(key) {
             if (key != '0') {
                 json_array.push(key)
             }
@@ -130,7 +130,7 @@ class SECRlpEncode {
     *   Verify whether input is dictionary structure
     */
     _hasNestedKey(v) {
-        if (JSON.stringify(v).indexOf(":") > -1){
+        if (JSON.stringify(v).indexOf(':') > -1){
             return true
         }
         
@@ -152,10 +152,10 @@ class SECRlpEncode {
         }*/
         
         if (!(json_key_array instanceof Array)) {
-            throw new Error("invalid input type")
+            throw new Error('invalid input type')
         }
         
-        return "".concat("{", this._combineKeyValue(decode_result.slice(1), json_key_array.slice(1)), "}")
+        return ''.concat('{', this._combineKeyValue(decode_result.slice(1), json_key_array.slice(1)), '}')
     }
 
     /*
@@ -175,73 +175,73 @@ class SECRlpEncode {
                 decode_result[i - index_diff] = decode_result[i - index_diff].toString('utf8')
             }
             
-            //{"a": "b"} => [a] and [b]
+            //{'a': 'b'} => [a] and [b]
             if ((typeof decode_result[i - index_diff] === 'string') && (typeof json_key_array[i] === 'string')) {
-                //console.log("first loop")
-                json_array.push("\"", json_key_array[i], "\": \"", decode_result[i - index_diff], "\",")
+                //console.log('first loop')
+                json_array.push('"', json_key_array[i], '": "', decode_result[i - index_diff], '",')
             }
             
-            //{"a": {"b": "c"}} => [a, b] and [c]
+            //{'a': {'b': 'c'}} => [a, b] and [c]
             else if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] === 'string')) {
-                //console.log("second loop")
-                json_array.push("\"", json_key_array[i], "\": ")
+                //console.log('second loop')
+                json_array.push('"', json_key_array[i], '": ')
                 index_diff++
             }
             
             //nested array and dict, e.g. {{}} or {[]} or [{}] or [[]]
             else if ((decode_result[i - index_diff] instanceof Array) && (json_key_array[i] instanceof Array)) {
-                //console.log("third loop")
-                //{["a": "b"]} => [[a]], and [[b]] or [["a": "b"]] => [[a]], and [[b]]
-                if ((json_key_array[i][0] == "1") && (decode_result[i - index_diff][0] == "1")) {       //it's array
-                    json_array.push("[")
+                //console.log('third loop')
+                //{['a': 'b']} => [[a]], and [[b]] or [['a': 'b']] => [[a]], and [[b]]
+                if ((json_key_array[i][0] == '1') && (decode_result[i - index_diff][0] == '1')) {       //it's array
+                    json_array.push('[')
                     json_array.push(this._combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
-                    json_array.push("],")
+                    json_array.push('],')
                 } 
-                //{{"a": "b"}} => [[a]], and [[b]] or [{"a": "b"}] => [[a]], and [[b]]
-                else if ((json_key_array[i][0] == "2") && (decode_result[i - index_diff][0] == "2")) {
-                    json_array.push("{")
+                //{{'a': 'b'}} => [[a]], and [[b]] or [{'a': 'b'}] => [[a]], and [[b]]
+                else if ((json_key_array[i][0] == '2') && (decode_result[i - index_diff][0] == '2')) {
+                    json_array.push('{')
                     json_array.push(this._combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
-                    json_array.push("},")
+                    json_array.push('},')
                 } else {
-                    throw new Error("RLP data and JSON format does not match")
+                    throw new Error('RLP data and JSON format does not match')
                 }
             }
             else {
-                throw new Error("Unknown error, debug for more information")
+                throw new Error('Unknown error, debug for more information')
             }
         }
 
-        //{"a": {["b"]}} => [a] and [[b]] => "null" and [b]
+        //{'a': {['b']}} => [a] and [[b]] => 'null' and [b]
         if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] == 'undefined')) {
-            console.log("fourth loop")
-            json_array.push("[", this._arrayToJSONString(decode_result[i - index_diff].slice(1)), "],")
+            console.log('fourth loop')
+            json_array.push('[', this._arrayToJSONString(decode_result[i - index_diff].slice(1)), '],')
         }
 
-        let result = json_array.join("")
+        let result = json_array.join('')
         
         //remove the last element's comma
         return result.slice(0, result.length - 1)
     }
 
     /*
-    *   Convert nested array to string, e.g. [1,2,[3,4]] => ["1", "2", "[", "3", "4", "]"]
+    *   Convert nested array to string, e.g. [1,2,[3,4]] => ['1', '2', '[', '3', '4', ']']
     */
     _arrayToJSONString(input_array){
         let result_array = []
         
         if (!(input_array instanceof Array)) {
-            return result_array.push("\"", input_array, "\",")
+            return result_array.push('"', input_array, '",')
         }
         
         input_array.forEach(function(element) {
             if (!(element instanceof Array)) {
-                result_array.push("\"", element, "\",")
+                result_array.push('"', element, '",')
             } else {
-                result_array.push("[", this._arrayToJSONString(element), "],")
+                result_array.push('[', this._arrayToJSONString(element), '],')
             }
         }.bind(this))
         
-        let result = result_array.join("")
+        let result = result_array.join('')
 
         return result.slice(0, result.length - 1)
     }
@@ -439,11 +439,11 @@ class SECRlpEncode {
                     v = Buffer.from(v)
                 }
             } else if (typeof v === 'number') {
-            if (!v) {
-                v = Buffer.from([])
-            } else {
-                v = this._intToBuffer(v)
-            }
+                if (!v) {
+                    v = Buffer.from([])
+                } else {
+                    v = this._intToBuffer(v)
+                }
             } else if (v === null || v === undefined) {
                 v = Buffer.from([])
             } else if (v.toArray) {
@@ -465,7 +465,7 @@ class SECRlpEncode {
     }
 
     /*
-    *   If the input length is not even, and a "0" in front
+    *   If the input length is not even, and a '0' in front
     */
     _padToEven (a){
         if (a.length % 2) a = '0' + a
@@ -483,14 +483,14 @@ class SECRlpEncode {
     }
 
     /*
-    *   Check whether the string has perfix "0x"
+    *   Check whether the string has perfix '0x'
     */
     _isHexPrefixed (str) {
         return str.slice(0, 2) === '0x'
     }
 
     /*
-    *   Convert number to hex format string and compensate the length even (e.g. 10 => "0A") 
+    *   Convert number to hex format string and compensate the length even (e.g. 10 => '0A') 
     */
     _intToHex(i) {
         let hex = i.toString(16)
@@ -502,7 +502,7 @@ class SECRlpEncode {
     }
 
     /*
-    *   Convert string to number (e.g. "0400" => 1024)
+    *   Convert string to number (e.g. '0400' => 1024)
     */
     _safeParseInt(v, base) {
         if (v.slice(0, 2) === '00') {
@@ -513,4 +513,4 @@ class SECRlpEncode {
     }
 }
 
-module.exports = SECRlpEncode;
+module.exports = SECRlpEncode

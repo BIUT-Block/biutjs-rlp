@@ -7,6 +7,244 @@ class SECRlpEncode {
     constructor(config){
         this.config = config
     }
+    
+    /**
+    * jsonToRlp
+    * @desc RLP encoding for json file
+    * @param {Buffer, String, Integer, Array} input - Input is json file raw data (not parsed)
+    * @return {Buffer} RLP encoded json data
+    */
+    jsonToRlp(input) {
+        if (this._isJsonString(input) == false) {
+            throw new Error('invalid JSON input')
+        }
+
+        input = JSON.parse(input);
+        
+        let json_array = this._jsonToArray(input)
+
+        return this.encode(json_array)
+    }
+
+    /*
+    *   Remove keys in json file and return a nested array
+    *   Notice: For each nested layer, there is an extra indication byte to distinguish "array"(1 = 0x31) and "dict"(2 = 0x32) types
+    */
+    _jsonToArray(input) {
+        let json_array = new Array()
+        
+        if (this._hasNestedStruct(input) == false) {
+            return input
+        }
+        if (input instanceof Array) {
+            json_array.push("1")        //Assume "1" = 0x31 is for array
+            input.forEach(function(element) {
+              json_array.push(this._jsonToArray(element))
+            }.bind(this))
+            return json_array
+        }
+        
+        json_array.push("2")        //Assume "2" = 0x32 is for dictionary
+        Object.keys(input).forEach(function(key, keyIndex) {
+            if (typeof input[key] == 'number') {
+                input[key] = input[key].toString()
+            }
+            json_array.push(this._jsonToArray(input[key]))
+        }.bind(this))
+        
+        return json_array
+    }
+
+    /*
+    *   Verify whether "input" is in json format
+    */
+    _isJsonString(input) {
+        try {
+            JSON.parse(input);
+        } catch (e) {
+            return false;
+        }
+        return true;
+    }
+
+    /*
+    *   Verify whether input has a nested array or dict
+    */
+    _hasNestedStruct(v) {
+        if ((JSON.stringify(v).indexOf("{") > -1) || (JSON.stringify(v).indexOf("[") > -1)) {
+            return true
+        }
+        
+        return false
+    }
+
+    /**
+    * jsonKeyArray
+    * @desc Extract and create an array with json keys only (for decoding)
+    * @param {Buffer, String, Integer, Array} input - Input is json file raw data (not parsed)
+    * @return {Array} Nested array comsists of json keys
+    */
+    jsonKeyArray(input) {
+        if (this._isJsonString(input) == false) {
+            throw new Error('invalid JSON file')
+        }
+
+        input = JSON.parse(input);
+
+        return this._jsonKeyRegister(input)
+    }
+
+    /*
+    *   Return an array with json keys only
+    *   Notice: For each nested layer, there is an extra indication byte to distinguish "array"(1 = 0x31) and "dict"(2 = 0x32) types
+    */
+    _jsonKeyRegister(input) {
+        let json_array = new Array()
+        
+        if (this._hasNestedStruct(input) == false) {
+            return null
+        }
+        
+        if (input instanceof Array) {
+            json_array.push("1")        //Assume "1" = 0x31 is for array
+            input.forEach(function(element) {
+              json_array.push(this._jsonKeyRegister(element))
+            }.bind(this))
+            return json_array
+        }
+        
+        json_array.push("2")        //Assume "2" = 0x32 is for dictionary
+        Object.keys(input).forEach(function(key, keyIndex) {
+            if (key != '0') {
+                json_array.push(key)
+            }
+            if (this._hasNestedKey(input[key]) == true) {
+                json_array.push(this._jsonKeyRegister(input[key]))
+            }
+        }.bind(this))
+        
+        return json_array
+    }
+
+    /*
+    *   Verify whether input is dictionary structure
+    */
+    _hasNestedKey(v) {
+        if (JSON.stringify(v).indexOf(":") > -1){
+            return true
+        }
+        
+        return false
+    }
+
+    /**
+    * rlpToJson
+    * @desc rlp encoded data revert to JSON file
+    * @param {Buffer, String, Integer, Array} rlp_input - rlp encoded data
+    * @param {Array} json_key_array - Json key array, if this argument is empty, then uses the default format(SEC predefined format)
+    * @return {Array} decoded JSON array
+    */
+    rlpToJson (rlp_input, json_key_array) {
+        let decode_result = this.decode(rlp_input)
+
+        /*if (json_key_array == null) {
+            json_key_array = [ 'rlpTesttest', [ 'intest', 'outtest' ] ]
+        }*/
+        
+        if (!(json_key_array instanceof Array)) {
+            throw new Error("invalid input type")
+        }
+        
+        return "".concat("{", this._combineKeyValue(decode_result.slice(1), json_key_array.slice(1)), "}")
+    }
+
+    /*
+    *   Combine json key array and value array and return a complete json file
+    */
+    _combineKeyValue(decode_result, json_key_array) {
+        
+        let json_array = []
+        //json_key_array length is longer than decode_result, this variable is the index difference between the two arrays
+        let index_diff = 0
+        let i = 0
+        
+        for (i = 0; i < json_key_array.length; i++) {
+            
+            //Convert decode_result to string
+            if (Buffer.isBuffer(decode_result[i - index_diff])) {
+                decode_result[i - index_diff] = decode_result[i - index_diff].toString('utf8')
+            }
+            
+            //{"a": "b"} => [a] and [b]
+            if ((typeof decode_result[i - index_diff] === 'string') && (typeof json_key_array[i] === 'string')) {
+                //console.log("first loop")
+                json_array.push("\"", json_key_array[i], "\": \"", decode_result[i - index_diff], "\",")
+            }
+            
+            //{"a": {"b": "c"}} => [a, b] and [c]
+            else if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] === 'string')) {
+                //console.log("second loop")
+                json_array.push("\"", json_key_array[i], "\": ")
+                index_diff++
+            }
+            
+            //nested array and dict, e.g. {{}} or {[]} or [{}] or [[]]
+            else if ((decode_result[i - index_diff] instanceof Array) && (json_key_array[i] instanceof Array)) {
+                //console.log("third loop")
+                //{["a": "b"]} => [[a]], and [[b]] or [["a": "b"]] => [[a]], and [[b]]
+                if ((json_key_array[i][0] == "1") && (decode_result[i - index_diff][0] == "1")) {       //it's array
+                    json_array.push("[")
+                    json_array.push(this._combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
+                    json_array.push("],")
+                } 
+                //{{"a": "b"}} => [[a]], and [[b]] or [{"a": "b"}] => [[a]], and [[b]]
+                else if ((json_key_array[i][0] == "2") && (decode_result[i - index_diff][0] == "2")) {
+                    json_array.push("{")
+                    json_array.push(this._combineKeyValue(decode_result[i - index_diff].slice(1), json_key_array[i].slice(1)))
+                    json_array.push("},")
+                } else {
+                    throw new Error("RLP data and JSON format does not match")
+                }
+            }
+            else {
+                throw new Error("Unknown error, debug for more information")
+            }
+        }
+
+        //{"a": {["b"]}} => [a] and [[b]] => "null" and [b]
+        if ((decode_result[i - index_diff] instanceof Array) && (typeof json_key_array[i] == 'undefined')) {
+            console.log("fourth loop")
+            json_array.push("[", this._arrayToJSONString(decode_result[i - index_diff].slice(1)), "],")
+        }
+
+        let result = json_array.join("")
+        
+        //remove the last element's comma
+        return result.slice(0, result.length - 1)
+    }
+
+    /*
+    *   Convert nested array to string, e.g. [1,2,[3,4]] => ["1", "2", "[", "3", "4", "]"]
+    */
+    _arrayToJSONString(input_array){
+        let result_array = []
+        
+        if (!(input_array instanceof Array)) {
+            return result_array.push("\"", input_array, "\",")
+        }
+        
+        input_array.forEach(function(element) {
+            if (!(element instanceof Array)) {
+                result_array.push("\"", element, "\",")
+            } else {
+                result_array.push("[", this._arrayToJSONString(element), "],")
+            }
+        }.bind(this))
+        
+        let result = result_array.join("")
+
+        return result.slice(0, result.length - 1)
+    }
 
     /**
     * encode

@@ -1,9 +1,11 @@
 const assert = require('assert')
 const RLP = require('../encode.js')
+const fs = require("fs")
 
+const rlp = new RLP()
 
 describe('RLP encoding (string):', function () {
-    let rlp = new RLP()
+    
     it('should return itself if single byte and less than 0x7f:', function () {
         var encodedSelf = rlp.encode('a')
         assert.equal(encodedSelf.toString(), 'a')
@@ -19,4 +21,19 @@ describe('RLP encoding (string):', function () {
         assert.equal(encodedDog[2], 111)
         assert.equal(encodedDog[3], 103)
     })
+})
+
+describe('SEC RLP test(unspecified JSON model)', function () {
+    
+    var contents = fs.readFileSync("./test_json/test_json.json")
+    var ebook = fs.readFileSync("./test_json/ebook_genesisBlock_origin.json")
+    
+    contents_rlp_encode = rlp.jsonToRlp(contents)
+    contents_json_format = rlp.jsonKeyArray(contents)
+    
+    ebook_rlp_encode = rlp.jsonToRlp(ebook)
+    ebook_json_format = rlp.jsonKeyArray(ebook)
+
+    assert.deepEqual(JSON.parse(rlp.rlpToJson(contents_rlp_encode, contents_json_format)), JSON.parse(contents))
+    //assert.deepEqual(JSON.parse(rlp.rlpToJson(ebook_rlp_encode, ebook_json_format)), JSON.parse(ebook))
 })

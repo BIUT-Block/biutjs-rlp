@@ -1,4 +1,36 @@
-中文简介：
+<a name="SECJS-RLP"></a>
+
+* * *
+## SECRlpEncode
+**Kind**: global class
+
+* [SECRlpEncode](#SECRlpEncode)
+    * [new SECRlpEncode(config)](#new_SECRlpEncode_new)
+    * [.jsonToRlp(input)](#SECRlpEncode+jsonToRlp) ⇒ <code>Buffer</code>
+    * [.jsonKeyArray(input)](#SECRlpEncode+jsonKeyArray) ⇒ <code>Array</code>
+    * [.rlpToJson(rlp_input, json_key_array)](#SECRlpEncode+rlpToJson) ⇒ <code>Array</code>
+    * [.encode(input)](#SECRlpEncode+encode) ⇒ <code>Buffer</code>
+    * [.decode(input)](#SECRlpEncode+decode) ⇒ <code>Array</code>
+    * [.getLength(input)](#SECRlpEncode+getLength) ⇒ <code>Number</code>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* * *
+# 中文简介：
 本库函数用于SEC区块链的RLP编码
 RLP编码用于存储和传输数据，处理数据则用.json格式文件
 json文件由RLP编码过以后，由于json文件的键值被去掉了，仅保留内容，因此剩下了大量的空间
@@ -13,7 +45,7 @@ json文件由RLP编码过以后，由于json文件的键值被去掉了，仅保
 	输入可以是{Buffer,String,Integer,Array}，无论哪种类型，都会被先转换为Buffer类型再进行处理
 	作用与encode相反，将RLP格式的数据进行解码, 输出为Array类型
 
-3.	获取长度函数: getLength(input) => number
+3.	获取长度函数: getLength(input) => Number
 	input为经过RLP编码后的数据
 	函数根据前几个字节的值获取整个input数据的长度
 	

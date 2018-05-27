@@ -1,0 +1,26 @@
+{
+  "name": "secjs-rlp",
+  "version": "1.0.1",
+  "description": "secjs blockchain rlp lib",
+  "main": "encode.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/MongoX-SEC/secjs-rlp.git"
+  },
+  "keywords": [
+    "secjs",
+    "rlp"
+  ],
+  "author": "Weihan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/MongoX-SEC/secjs-rlp/issues"
+  },
+  "homepage": "https://gitlab.com/MongoX-SEC/secjs-rlp#README"
+}

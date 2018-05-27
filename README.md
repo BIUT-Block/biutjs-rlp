@@ -14,15 +14,89 @@
     * [.getLength(input)](#SECRlpEncode+getLength) ⇒ <code>Number</code>
 
 
+* * *
+<a name="new_SECRlpEncode_new"></a>
+
+### new SECRlpEncode(config)
+new SECRlpEncode(config)
+Constructs a rlp encode class.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| config | <code>TBD</code> | TBD, will be implemented in the future |
+
+**Example**
+```js
+const RLP = require('encode.js')
+
+const rlp = new RLP()
+```
+
+
+* * *
+<a name="SECRlpEncode+jsonToRlp"></a>
+### SECRlpEncode.jsonToRlp(input) ⇒ <code>Buffer</code>
+Rlp encoding for json file
+
+| Param | Type | Description |
+| --- | --- | --- |
+| input | <code>{Buffer, String, Integer, Array}</code> | Not parsed JSON format input |
+
+
+* * *
+<a name="SECRlpEncode+jsonKeyArray"></a>
+### SECRlpEncode.jsonKeyArray(input) ⇒ <code>Array</code>
+Extract and create an array with json keys only (for decoding)
+
+| Param | Type | Description |
+| --- | --- | --- |
+| input | <code>{Buffer, String, Integer, Array}</code> | Not parsed JSON format input |
 
 
 
+* * *
+<a name="SECRlpEncode+rlpToJson"></a>
+### SECRlpEncode.rlpToJson(rlp_input, json_key_array) ⇒ <code>Array</code>
+Rlp encoded data revert to JSON file
+
+| Param | Type | Description |
+| --- | --- | --- |
+| rlp_input | <code>{Buffer, String, Integer, Array}</code> | Rlp encoded data |
+| json_key_array | <code>{Buffer, String, Integer, Array}</code> | Json key array, if this argument is empty, then uses the default format(SEC predefined format) |
 
 
 
+* * *
+<a name="SECRlpEncode+encode"></a>
+### SECRlpEncode.encode(input) ⇒ <code>Buffer</code>
+Returns input in RLP encoded format
+
+| Param | Type | Description |
+| --- | --- | --- |
+| input | <code>{Buffer, String, Integer, Array}</code> | Input data for RLP encode |
 
 
 
+* * *
+<a name="SECRlpEncode+decode"></a>
+### SECRlpEncode.decode(input) ⇒ <code>Array</code>
+RLP decode for input data
+
+| Param | Type | Description |
+| --- | --- | --- |
+| input | <code>{Buffer, String, Integer, Array}</code> | Input should be in RLP encoded structure |
+
+
+
+* * *
+<a name="SECRlpEncode+getLength"></a>
+### SECRlpEncode.getLength(input) ⇒ <code>Number</code>
+Returns input's length according to the first several indication bytes
+
+| Param | Type | Description |
+| --- | --- | --- |
+| input | <code>{Buffer, String, Integer, Array}</code> | Input should be in RLP encoded data, or the returned length is wrong |
 
 
 

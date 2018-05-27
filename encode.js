@@ -11,7 +11,7 @@ class SECRlpEncode {
     /**
     * jsonToRlp
     * @desc RLP encoding for json file
-    * @param {Buffer, String, Integer, Array} input - Input is json file raw data (not parsed)
+    * @param {Buffer, String, Integer, Array} input - Not parsed JSON format input
     * @return {Buffer} RLP encoded json data
     */
     jsonToRlp(input) {
@@ -81,7 +81,7 @@ class SECRlpEncode {
     /**
     * jsonKeyArray
     * @desc Extract and create an array with json keys only (for decoding)
-    * @param {Buffer, String, Integer, Array} input - Input is json file raw data (not parsed)
+    * @param {Buffer, String, Integer, Array} input - Not parsed JSON format input
     * @return {Array} Nested array comsists of json keys
     */
     jsonKeyArray(input) {
@@ -248,7 +248,7 @@ class SECRlpEncode {
 
     /**
     * encode
-    * @desc Returns input in RLP encoded structure
+    * @desc Returns input in RLP encoded format
     * @param {Buffer, String, Integer, Array} input - Input data for RLP encode
     * @return {Buffer} RLP encoded input data
     */

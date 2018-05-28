@@ -1,6 +1,6 @@
 const assert = require('assert')
-const RLP = require('../encode.js')
 const fs = require('fs')
+const RLP = require('../src/index')
 
 const rlp = new RLP()
 
@@ -23,15 +23,15 @@ describe('RLP encoding (string):', function () {
 })
 
 describe('SEC RLP test(unspecified JSON model)', function () {
-  let contents = fs.readFileSync('./test_json/test_json.json')
-  // let ebook = fs.readFileSync('./test_json/ebook_genesisBlock_origin.json')
+  let contents = fs.readFileSync('./test-json.json')
+  // let ebook = fs.readFileSync('./test-json/ebook-genesisBlock-origin.json')
 
   let contentsRlpEncode = rlp.jsonToRlp(contents)
   let contentsJsonFormat = rlp.jsonKeyArray(contents)
 
-  // let ebook_rlp_encode = rlp.jsonToRlp(ebook)
-  // let ebook_json_format = rlp.jsonKeyArray(ebook)
+  // let ebook-rlp-encode = rlp.jsonToRlp(ebook)
+  // let ebook-json-format = rlp.jsonKeyArray(ebook)
 
   assert.deepEqual(JSON.parse(rlp.rlpToJson(contentsRlpEncode, contentsJsonFormat)), JSON.parse(contents))
-  // assert.deepEqual(JSON.parse(rlp.rlpToJson(ebook_rlp_encode, ebook_json_format)), JSON.parse(ebook))
+  // assert.deepEqual(JSON.parse(rlp.rlpToJson(ebook-rlp-encode, ebook-json-format)), JSON.parse(ebook))
 })

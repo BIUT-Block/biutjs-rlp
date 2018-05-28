@@ -8,7 +8,7 @@
     * [new SECRlpEncode(config)](#new_SECRlpEncode_new)
     * [.jsonToRlp(input)](#SECRlpEncode+jsonToRlp) ⇒ <code>Buffer</code>
     * [.jsonKeyArray(input)](#SECRlpEncode+jsonKeyArray) ⇒ <code>Array</code>
-    * [.rlpToJson(rlp_input, json_key_array)](#SECRlpEncode+rlpToJson) ⇒ <code>Array</code>
+    * [.rlpToJson(rlpInput, jsonKeyArray)](#SECRlpEncode+rlpToJson) ⇒ <code>Array</code>
     * [.encode(input)](#SECRlpEncode+encode) ⇒ <code>Buffer</code>
     * [.decode(input)](#SECRlpEncode+decode) ⇒ <code>Array</code>
     * [.getLength(input)](#SECRlpEncode+getLength) ⇒ <code>Number</code>
@@ -57,13 +57,13 @@ Extract and create an array with json keys only (for decoding)
 
 * * *
 <a name="SECRlpEncode+rlpToJson"></a>
-### SECRlpEncode.rlpToJson(rlp_input, json_key_array) ⇒ <code>Array</code>
+### SECRlpEncode.rlpToJson(rlpInput, jsonKeyArray) ⇒ <code>Array</code>
 Rlp encoded data revert to JSON file
 
 | Param | Type | Description |
 | --- | --- | --- |
-| rlp_input | <code>{Buffer, String, Integer, Array}</code> | Rlp encoded data |
-| json_key_array | <code>{Buffer, String, Integer, Array}</code> | Json key array, if this argument is empty, then uses the default format(SEC predefined format) |
+| rlpInput | <code>{Buffer, String, Integer, Array}</code> | Rlp encoded data |
+| jsonKeyArray | <code>{Buffer, String, Integer, Array}</code> | Json key array, if this argument is empty, then uses the default format(SEC predefined format) |
 
 
 
@@ -134,9 +134,9 @@ RLP和JSON格式之间的转换函数：
 	同(1)中提过的，在去掉JSON值，提取key的过程中，若嵌套的下一层为Array，则下一层的第一个字符会标为0x31，若下一层为object(dictionary)，则下一层第一个字符为0x32
 	例如:{"a": ["3","4"]}经过RLP编码后为 [0xc4, 0x32, 0x61, 0xc1, 0x31]
 
-3.	RLP转JSON：rlpToJson(rlp_input, json_key_array) => Array
-	rlp_input为经过(1)中jsonToRlp(input)编码后输出的RLP编码结果
-	json_key_array为经过(2)中jsonKeyArray(input)提取出来的JSON的key所组成的Array，也可以为预先定义好固定格式的JSON结构(如我们将要用的SEC区块JSON格式)
+3.	RLP转JSON：rlpToJson(rlpInput, jsonKeyArray) => Array
+	rlpInput为经过(1)中jsonToRlp(input)编码后输出的RLP编码结果
+	jsonKeyArray为经过(2)中jsonKeyArray(input)提取出来的JSON的key所组成的Array，也可以为预先定义好固定格式的JSON结构(如我们将要用的SEC区块JSON格式)
 	输出为(1)中jsonToRlp(input)的输入数据input
 
 此外，需要注意的是：

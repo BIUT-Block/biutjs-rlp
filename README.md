@@ -1,5 +1,7 @@
 <a name="SECJS-RLP"></a>
 
+[![js-standard-style](https://cdn.rawgit.com/feross/standard/master/badge.svg)](https://github.com/feross/standard)
+
 * * *
 ## SECRlpEncode
 **Kind**: global class

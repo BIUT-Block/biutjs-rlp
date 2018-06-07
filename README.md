@@ -9,11 +9,8 @@
 
 * [SECRlpEncode](#SECRlpEncode)
     * [new SECRlpEncode(config)](#new_SECRlpEncode_new)
-    * [.jsonToRlp(input)](#SECRlpEncode+jsonToRlp) ⇒ <code>Buffer</code>
-    * [.jsonKeyArray(input)](#SECRlpEncode+jsonKeyArray) ⇒ <code>Array</code>
-    * [.rlpToJson(rlpInput, jsonKeyArray)](#SECRlpEncode+rlpToJson) ⇒ <code>Array</code>
-    * [.encode(input)](#SECRlpEncode+encode) ⇒ <code>Buffer</code>
-    * [.decode(input)](#SECRlpEncode+decode) ⇒ <code>Array</code>
+    * [.encode(input, buffer, offset)](#SECRlpEncode+encode) ⇒ <code>Buffer</code>
+    * [.decode(input, start, end)](#SECRlpEncode+decode) ⇒ <code>Array</code>
     * [.getLength(input)](#SECRlpEncode+getLength) ⇒ <code>Number</code>
 
 
@@ -38,57 +35,28 @@ const rlp = new RLP()
 
 
 * * *
-<a name="SECRlpEncode+jsonToRlp"></a>
-### SECRlpEncode.jsonToRlp(input) ⇒ <code>Buffer</code>
-Rlp encoding for json file
-
-| Param | Type | Description |
-| --- | --- | --- |
-| input | <code>{Buffer, String, Integer, Array}</code> | Not parsed JSON format input |
-
-
-* * *
-<a name="SECRlpEncode+jsonKeyArray"></a>
-### SECRlpEncode.jsonKeyArray(input) ⇒ <code>Array</code>
-Extract and create an array with json keys only (for decoding)
-
-| Param | Type | Description |
-| --- | --- | --- |
-| input | <code>{Buffer, String, Integer, Array}</code> | Not parsed JSON format input |
-
-
-
-* * *
-<a name="SECRlpEncode+rlpToJson"></a>
-### SECRlpEncode.rlpToJson(rlpInput, jsonKeyArray) ⇒ <code>Array</code>
-Rlp encoded data revert to JSON file
-
-| Param | Type | Description |
-| --- | --- | --- |
-| rlpInput | <code>{Buffer, String, Integer, Array}</code> | Rlp encoded data |
-| jsonKeyArray | <code>{Buffer, String, Integer, Array}</code> | Json key array, if this argument is empty, then uses the default format(SEC predefined format) |
-
-
-
-* * *
 <a name="SECRlpEncode+encode"></a>
-### SECRlpEncode.encode(input) ⇒ <code>Buffer</code>
+### SECRlpEncode.encode(input, buffer, offset) ⇒ <code>Buffer</code>
 Returns input in RLP encoded format
 
 | Param | Type | Description |
 | --- | --- | --- |
 | input | <code>{Buffer, String, Integer, Array}</code> | Input data for RLP encode |
+| buffer | <code>{Buffer}</code> | Input buffer which is in RLP encoded format |
+| offset | <code>{Buffer}</code> | Buffer offset position |
 
 
 
 * * *
 <a name="SECRlpEncode+decode"></a>
-### SECRlpEncode.decode(input) ⇒ <code>Array</code>
+### SECRlpEncode.decode(input, start, end) ⇒ <code>Array</code>
 RLP decode for input data
 
 | Param | Type | Description |
 | --- | --- | --- |
 | input | <code>{Buffer, String, Integer, Array}</code> | Input should be in RLP encoded structure |
+| start | <code>{Integer}</code> | "input" data array starting index |
+| end | <code>{Integer}</code> | "input" data array ending index |
 
 
 

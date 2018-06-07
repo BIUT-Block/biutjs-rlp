@@ -76,10 +76,14 @@ class SECRlpEncode {
     // The range of the first byte is [0x80, 0xb7]
     if (firstByte <= 0xb7) {
       const length = firstByte - 0x80
-      if (length === 1 && input[start + 1] < 0x80) throw new Error('First byte must be less than 0x80')
+      if (length === 1 && input[start + 1] < 0x80) {
+        throw new Error('First byte must be less than 0x80')
+      }
 
       const value = this._bufferCopy(input, start + 1, length)
-      if (value.length !== length) throw new Error('Not enough data for decode')
+      if (value.length !== length) {
+        throw new Error('Not enough data for decode')
+      }
 
       this.decode.bytes = 1 + length
       return value
@@ -92,10 +96,14 @@ class SECRlpEncode {
     if (firstByte <= 0xbf) {
       const lengthLength = firstByte - 0xb7
       const length = this._decodeLength(input, start + 1, lengthLength)
-      if (length <= 55) throw new Error('Invalid length')
+      if (length <= 55) {
+        throw new Error('Invalid length')
+      }
 
       const value = this._bufferCopy(input, start + 1 + lengthLength, length)
-      if (value.length !== length) throw new Error('Not enough data for decode')
+      if (value.length !== length) {
+        throw new Error('Not enough data for decode')
+      }
 
       this.decode.bytes = 1 + lengthLength + length
       return value
@@ -119,7 +127,9 @@ class SECRlpEncode {
     // The range of the first byte is thus [0xf8, 0xff]
     const lengthLength = firstByte - 0xf7
     const length = this._decodeLength(input, start + 1, lengthLength)
-    if (length < 55) throw new Error('Invalid length')
+    if (length < 55) {
+      throw new Error('Invalid length')
+    }
 
     const value = this._decodeList(input, start + 1 + lengthLength, length)
     this.decode.bytes = 1 + lengthLength + length
@@ -130,10 +140,14 @@ class SECRlpEncode {
     *   Return the length of the following string or list
     */
   _decodeLength (input, offset, length) {
-    if (input[offset] === 0) throw new Error('Extra zeros')
+    if (input[offset] === 0) {
+      throw new Error('Extra zeros')
+    }
 
     const value = parseInt(input.slice(offset, offset + length).toString('hex'), 16)
-    if (isNaN(value) || !isFinite(value)) throw new Error('Invalid length')
+    if (isNaN(value) || !isFinite(value)) {
+      throw new Error('Invalid length')
+    }
 
     return value
   }
@@ -165,13 +179,19 @@ class SECRlpEncode {
 
     const buffer = this._toBuffer(input)
     let length = buffer.length
-    if (!(buffer.length === 1 && buffer[0] < 0x80)) length += this._encodingLength(length)
+    if (!(buffer.length === 1 && buffer[0] < 0x80)) {
+      length += this._encodingLength(length)
+    }
+
     return length
   }
 
   _encodingLength (value) {
     let length = 1
-    if (value > 55) length += this._intToHex(value).length / 2
+    if (value > 55) {
+      length += this._intToHex(value).length / 2
+    }
+
     return length
   }
 

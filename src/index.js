@@ -9,261 +9,37 @@ class SECRlpEncode {
   }
 
   /**
-    * jsonToRlp
-    * @desc RLP encoding for json file
-    * @param {Buffer, String, Integer, Array} input - Not parsed JSON format input
-    * @return {Buffer} RLP encoded json data
-    */
-  jsonToRlp (input) {
-    if (this._isJsonString(input) === false) {
-      throw new Error('invalid JSON input')
-    }
-
-    input = JSON.parse(input)
-
-    let jsonArray = this._jsonToArray(input)
-
-    return this.encode(jsonArray)
-  }
-
-  /*
-    *   Remove keys in json file and return a nested array
-    *   Notice: For each nested layer, there is an extra indication byte to distinguish 'array'(1 = 0x31) and 'dict'(2 = 0x32) types
-    */
-  _jsonToArray (input) {
-    let jsonArray = []
-
-    if (this._hasNestedStruct(input) === false) {
-      return input
-    }
-    if (input instanceof Array) {
-      jsonArray.push('1') // Assume '1' = 0x31 is for array
-      input.forEach(function (element) {
-        jsonArray.push(this._jsonToArray(element))
-      }.bind(this))
-      return jsonArray
-    }
-
-    jsonArray.push('2') // Assume '2' = 0x32 is for dictionary
-    Object.keys(input).forEach(function (key) {
-      if (typeof input[key] === 'number') {
-        input[key] = input[key].toString()
-      }
-      jsonArray.push(this._jsonToArray(input[key]))
-    }.bind(this))
-
-    return jsonArray
-  }
-
-  /*
-    *   Verify whether 'input' is in json format
-    */
-  _isJsonString (input) {
-    try {
-      JSON.parse(input)
-    } catch (e) {
-      return false
-    }
-    return true
-  }
-
-  /*
-    *   Verify whether input has a nested array or dict
-    */
-  _hasNestedStruct (v) {
-    if ((JSON.stringify(v).indexOf('{') > -1) || (JSON.stringify(v).indexOf('[') > -1)) {
-      return true
-    }
-
-    return false
-  }
-
-  /**
-    * jsonKeyArray
-    * @desc Extract and create an array with json keys only (for decoding)
-    * @param {Buffer, String, Integer, Array} input - Not parsed JSON format input
-    * @return {Array} Nested array comsists of json keys
-    */
-  jsonKeyArray (input) {
-    if (this._isJsonString(input) === false) {
-      throw new Error('invalid JSON file')
-    }
-
-    input = JSON.parse(input)
-
-    return this._jsonKeyRegister(input)
-  }
-
-  /*
-    *   Return an array with json keys only
-    *   Notice: For each nested layer, there is an extra indication byte to distinguish 'array'(1 = 0x31) and 'dict'(2 = 0x32) types
-    */
-  _jsonKeyRegister (input) {
-    let jsonArray = []
-
-    if (this._hasNestedStruct(input) === false) {
-      return null
-    }
-
-    if (input instanceof Array) {
-      jsonArray.push('1') // Assume '1' = 0x31 is for array
-      input.forEach(function (element) {
-        jsonArray.push(this._jsonKeyRegister(element))
-      }.bind(this))
-      return jsonArray
-    }
-
-    jsonArray.push('2') // Assume '2' = 0x32 is for dictionary
-    Object.keys(input).forEach(function (key) {
-      if (key !== '0') {
-        jsonArray.push(key)
-      }
-      if (this._hasNestedKey(input[key]) === true) {
-        jsonArray.push(this._jsonKeyRegister(input[key]))
-      }
-    }.bind(this))
-
-    return jsonArray
-  }
-
-  /*
-    *   Verify whether input is dictionary structure
-    */
-  _hasNestedKey (v) {
-    if (JSON.stringify(v).indexOf(':') > -1) {
-      return true
-    }
-
-    return false
-  }
-
-  /**
-    * rlpToJson
-    * @desc rlp encoded data revert to JSON file
-    * @param {Buffer, String, Integer, Array} rlpInput - rlp encoded data
-    * @param {Array} jsonKeyArray - Json key array, if this argument is empty, then uses the default format(SEC predefined format)
-    * @return {Array} decoded JSON array
-    */
-  rlpToJson (rlpInput, jsonKeyArray) {
-    let decodeResult = this.decode(rlpInput)
-
-    /* if (jsonKeyArray == null) {
-            jsonKeyArray = [ 'rlpTesttest', [ 'intest', 'outtest' ] ]
-        } */
-
-    if (!(jsonKeyArray instanceof Array)) {
-      throw new Error('invalid input type')
-    }
-
-    return ''.concat('{', this._combineKeyValue(decodeResult.slice(1), jsonKeyArray.slice(1)), '}')
-  }
-
-  /*
-    *   Combine json key array and value array and return a complete json file
-    */
-  _combineKeyValue (decodeResult, jsonKeyArray) {
-    let jsonArray = []
-    // jsonKeyArray length is longer than decodeResult, this variable is the index difference between the two arrays
-    let indexDiff = 0
-    let i = 0
-
-    for (i = 0; i < jsonKeyArray.length; i++) {
-      // Convert decodeResult to string
-      if (Buffer.isBuffer(decodeResult[i - indexDiff])) {
-        decodeResult[i - indexDiff] = decodeResult[i - indexDiff].toString('utf8')
-      }
-
-      // {'a': 'b'} => [a] and [b]
-      if ((typeof decodeResult[i - indexDiff] === 'string') && (typeof jsonKeyArray[i] === 'string')) {
-        // console.log('first loop')
-        jsonArray.push('"', jsonKeyArray[i], '": "', decodeResult[i - indexDiff], '",')
-      } else if ((decodeResult[i - indexDiff] instanceof Array) && (typeof jsonKeyArray[i] === 'string')) {
-        // {'a': {'b': 'c'}} => [a, b] and [c]
-        // console.log('second loop')
-        jsonArray.push('"', jsonKeyArray[i], '": ')
-        indexDiff++
-      } else if ((decodeResult[i - indexDiff] instanceof Array) && (jsonKeyArray[i] instanceof Array)) {
-        // nested array and dict, e.g. {{}} or {[]} or [{}] or [[]]
-        // console.log('third loop')
-        // {['a': 'b']} => [[a]], and [[b]] or [['a': 'b']] => [[a]], and [[b]]
-        if ((jsonKeyArray[i][0] === '1') && (decodeResult[i - indexDiff][0] == '1')) { // it's array
-          jsonArray.push('[')
-          jsonArray.push(this._combineKeyValue(decodeResult[i - indexDiff].slice(1), jsonKeyArray[i].slice(1)))
-          jsonArray.push('],')
-        } else if ((jsonKeyArray[i][0] === '2') && (decodeResult[i - indexDiff][0] == '2')) {
-          // {{'a': 'b'}} => [[a]], and [[b]] or [{'a': 'b'}] => [[a]], and [[b]]
-          jsonArray.push('{')
-          jsonArray.push(this._combineKeyValue(decodeResult[i - indexDiff].slice(1), jsonKeyArray[i].slice(1)))
-          jsonArray.push('},')
-        } else {
-          throw new Error('RLP data and JSON format does not match')
-        }
-      } else {
-        throw new Error('Unknown error, debug for more information')
-      }
-    }
-
-    // {'a': {['b']}} => [a] and [[b]] => 'null' and [b]
-    if ((decodeResult[i - indexDiff] instanceof Array) && (typeof jsonKeyArray[i] === 'undefined')) {
-      console.log('fourth loop')
-      jsonArray.push('[', this._arrayToJSONString(decodeResult[i - indexDiff].slice(1)), '],')
-    }
-
-    let result = jsonArray.join('')
-
-    // remove the last element's comma
-    return result.slice(0, result.length - 1)
-  }
-
-  /*
-    *   Convert nested array to string, e.g. [1,2,[3,4]] => ['1', '2', '[', '3', '4', ']']
-    */
-  _arrayToJSONString (inputArray) {
-    let resultArray = []
-
-    if (!(inputArray instanceof Array)) {
-      return resultArray.push('"', inputArray, '",')
-    }
-
-    inputArray.forEach(function (element) {
-      if (!(element instanceof Array)) {
-        resultArray.push('"', element, '",')
-      } else {
-        resultArray.push('[', this._arrayToJSONString(element), '],')
-      }
-    }.bind(this))
-
-    let result = resultArray.join('')
-
-    return result.slice(0, result.length - 1)
-  }
-
-  /**
     * encode
     * @desc Returns input in RLP encoded format
     * @param {Buffer, String, Integer, Array} input - Input data for RLP encode
+    * @param {Buffer} buffer - Input buffer which is in RLP encoded format
+    * @param {Buffer} offset - Buffer offset position
     * @return {Buffer} RLP encoded input data
     */
-  encode (input) {
-    if (input instanceof Array) {
-      let output = []
-      for (let i = 0; i < input.length; i++) {
-        output.push(this.encode(input[i]))
-      }
-      let buf = Buffer.concat(output)
-      return Buffer.concat([this._encodeLength(buf.length, 192), buf])
+  encode (input, buffer, offset = 0) {
+    let buf
+    if (Array.isArray(input)) {
+      buf = Buffer.concat(input.map((item) => this.encode(item)))
+      buf = Buffer.concat([ this._encodeLength(buf.length, 0xc0), buf ])
     } else {
-      input = this._toBuffer(input)
-      if (input.length === 1 && input[0] < 128) {
-        return input
-      } else {
-        return Buffer.concat([this._encodeLength(input.length, 128), input])
+      buf = this._toBuffer(input)
+      if (!(buf.length === 1 && buf[0] < 0x80)) {
+        buf = Buffer.concat([ this._encodeLength(buf.length, 0x80), buf ])
       }
     }
+
+    if (buffer !== undefined) {
+      if (offset + buf.length > buffer.length) throw new Error('Not enough buffer size')
+      buf.copy(buffer, offset)
+      buf = buffer
+    }
+
+    this.encode.bytes = buf.length
+    return buf
   }
 
   /*
-    *   Encode and return the first several indication bytes
+    *   Return the length indication prefix
     */
   _encodeLength (len, offset) {
     if (len < 56) {
@@ -280,142 +56,123 @@ class SECRlpEncode {
     * decode
     * @desc RLP decode for input data
     * @param {Buffer, String, Integer, Array} input - Input should be in RLP encoded structure
+    * @param {Integer} start - "input" data array starting index
+    * @param {Integer} end - "input" data array ending index
     * @return {Array}
     */
-  decode (input) {
-    if (!input || input.length === 0) {
-      return Buffer.from([])
+  decode (input, start = 0, end = input.length) {
+    if (start >= end) throw new Error('Not enough data for decode')
+
+    const firstByte = input[start]
+
+    // A single byte whose value is in the [0x00, 0x7f] range, that byte is its own RLP encoding.
+    if (firstByte <= 0x7f) {
+      this.decode.bytes = 1
+      return Buffer.from([ firstByte ])
     }
 
-    input = this._toBuffer(input)
-    let decoded = this._decode(input)
+    // String is 0-55 bytes long.
+    // A single byte with value 0x80 plus the length of the string followed by the string.
+    // The range of the first byte is [0x80, 0xb7]
+    if (firstByte <= 0xb7) {
+      const length = firstByte - 0x80
+      if (length === 1 && input[start + 1] < 0x80) throw new Error('First byte must be less than 0x80')
 
-    if (decoded.remainder.length !== 0) {
-      throw new Error('invalid remainder')
+      const value = this._bufferCopy(input, start + 1, length)
+      if (value.length !== length) throw new Error('Not enough data for decode')
+
+      this.decode.bytes = 1 + length
+      return value
     }
 
-    return decoded.data
+    // String with length more than 55 bytes long.
+    // A single byte with value 0xb7 plus the length in bytes of the length of the string in binary form,
+    // followed by the length of the string, followed by the string.
+    // The range of the first byte is thus [0xb8, 0xbf]
+    if (firstByte <= 0xbf) {
+      const lengthLength = firstByte - 0xb7
+      const length = this._decodeLength(input, start + 1, lengthLength)
+      if (length <= 55) throw new Error('Invalid length')
+
+      const value = this._bufferCopy(input, start + 1 + lengthLength, length)
+      if (value.length !== length) throw new Error('Not enough data for decode')
+
+      this.decode.bytes = 1 + lengthLength + length
+      return value
+    }
+
+    // If the total payload of a list is 0-55 bytes long,
+    // the RLP encoding consists of a single byte with value 0xc0 plus the length of the list
+    // followed by the concatenation of the RLP encodings of the items.
+    // The range of the first byte is thus [0xc0, 0xf7]
+    if (firstByte <= 0xf7) {
+      const length = firstByte - 0xc0
+      const value = this._decodeList(input, start + 1, length)
+      this.decode.bytes = 1 + length
+      return value
+    }
+
+    // If the total payload of a list is more than 55 bytes long,
+    // the RLP encoding consists of a single byte with value 0xf7 plus the length in bytes of the length
+    // of the payload in binary form, followed by the length of the payload,
+    // followed by the concatenation of the RLP encodings of the items.
+    // The range of the first byte is thus [0xf8, 0xff]
+    const lengthLength = firstByte - 0xf7
+    const length = this._decodeLength(input, start + 1, lengthLength)
+    if (length < 55) throw new Error('Invalid length')
+
+    const value = this._decodeList(input, start + 1 + lengthLength, length)
+    this.decode.bytes = 1 + lengthLength + length
+    return value
   }
 
   /*
-    *   RLP first-indication bytes parser
+    *   Return the length of the following string or list
     */
-  _decode (input) {
-    let length, llength, data, innerRemainder, d
-    let decoded = []
-    let firstByte = input[0]
+  _decodeLength (input, offset, length) {
+    if (input[offset] === 0) throw new Error('Extra zeros')
 
-    if (firstByte <= 0x7f) {
-      // a single byte whose value is in the [0x00, 0x7f] range, that byte is its own RLP encoding.
-      return {
-        data: input.slice(0, 1),
-        remainder: input.slice(1)
-      }
-    } else if (firstByte <= 0xb7) {
-      // string is 0-55 bytes long. A single byte with value 0x80 plus the length of the string followed by the string
-      // The range of the first byte is [0x80, 0xb7]
-      length = firstByte - 0x7f
+    const value = parseInt(input.slice(offset, offset + length).toString('hex'), 16)
+    if (isNaN(value) || !isFinite(value)) throw new Error('Invalid length')
 
-      // set 0x80 null to 0
-      if (firstByte === 0x80) {
-        data = Buffer.from([])
-      } else {
-        data = input.slice(1, length)
-      }
+    return value
+  }
 
-      if (length === 2 && data[0] < 0x80) {
-        throw new Error('invalid rlp encoding: byte must be less 0x80')
-      }
+  /*
+    *   RLP decode for nested list or string
+    */
+  _decodeList (input, start, length) {
+    const lst = []
 
-      return {
-        data: data,
-        remainder: input.slice(length)
-      }
-    } else if (firstByte <= 0xbf) {
-      llength = firstByte - 0xb6
-      length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
-      data = input.slice(llength, length + llength)
-      if (data.length < length) {
-        throw (new Error('invalid RLP'))
-      }
-
-      return {
-        data: data,
-        remainder: input.slice(length + llength)
-      }
-    } else if (firstByte <= 0xf7) {
-      // a list between  0-55 bytes long
-      length = firstByte - 0xbf
-      innerRemainder = input.slice(1, length)
-      while (innerRemainder.length) {
-        d = this._decode(innerRemainder)
-        decoded.push(d.data)
-        innerRemainder = d.remainder
-      }
-
-      return {
-        data: decoded,
-        remainder: input.slice(length)
-      }
-    } else {
-      // a list  over 55 bytes long
-      llength = firstByte - 0xf6
-      length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
-      let totalLength = llength + length
-      if (totalLength > input.length) {
-        throw new Error('invalid rlp: total length is larger than the data')
-      }
-
-      innerRemainder = input.slice(llength, totalLength)
-      if (innerRemainder.length === 0) {
-        throw new Error('invalid rlp, List has a invalid length')
-      }
-
-      while (innerRemainder.length) {
-        d = this._decode(innerRemainder)
-        decoded.push(d.data)
-        innerRemainder = d.remainder
-      }
-      return {
-        data: decoded,
-        remainder: input.slice(totalLength)
-      }
+    for (const end = start + length; start !== end; start += this.decode.bytes) {
+      lst.push(this.decode(input, start, end))
     }
+
+    return lst
   }
 
   /**
     * getLength
-    * @desc Returns input's length according to the first several indication bytes
+    * @desc Returns input's length according to the length prefix
     * @param {Buffer, String, Integer, Array} input - Input should be in RLP encoded data, or the returned length is wrong
     * @return {Number}
     */
   getLength (input) {
-    if (!input || input.length === 0) {
-      return Buffer.from([])
+    if (Array.isArray(input)) {
+      const length = input.reduce((total, item) => total + this.getLength(item), 0)
+      return this._encodingLength(length) + length
     }
 
-    input = this._toBuffer(input)
-    let firstByte = input[0]
-    if (firstByte <= 0x7f) {
-      // a character has a value smaller than 128
-      return input.length
-    } else if (firstByte <= 0xb7) {
-      // a string between 0-55 bytes long
-      return firstByte - 0x7f
-    } else if (firstByte <= 0xbf) {
-      // a string over 55 bytes long
-      let llength = firstByte - 0xb6
-      let length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
-      return llength + length
-    } else if (firstByte <= 0xf7) {
-      // a list between  0-55 bytes long
-      return firstByte - 0xbf
-    } else {
-      // a list over 55 bytes long
-      let llength = firstByte - 0xf6
-      let length = this._safeParseInt(input.slice(1, llength).toString('hex'), 16)
-      return llength + length
-    }
+    const buffer = this._toBuffer(input)
+    let length = buffer.length
+    if (!(buffer.length === 1 && buffer[0] < 0x80)) length += this._encodingLength(length)
+    return length
+  }
+
+  _encodingLength (value) {
+    let length = 1
+    if (value > 55) length += this._intToHex(value).length / 2
+    return length
   }
 
   /*
@@ -501,6 +258,13 @@ class SECRlpEncode {
     }
 
     return parseInt(v, base)
+  }
+
+  /*
+  *   Copy a buffer
+  */
+  _bufferCopy (buffer, start, length) {
+    return Buffer.from(buffer.slice(start, start + length))
   }
 }
 

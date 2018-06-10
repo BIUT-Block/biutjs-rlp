@@ -2,7 +2,7 @@
   "name": "@sec-block/secjs-rlp",
   "version": "1.1.2",
   "description": "secjs blockchain rlp lib",
-  "main": "index.js",
+  "main": "src/index.js",
   "directories": {
     "test": "test"
   },

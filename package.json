@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@gitlab.com/MongoX-SEC/secjs-rlp.git"
+    "url": "git+https://github.com/SECblock/secjs-rlp.git"
   },
   "keywords": [
     "secjs",
@@ -20,7 +20,10 @@
   "author": "Weihan",
   "license": "ISC",
   "bugs": {
-    "url": "https://gitlab.com/MongoX-SEC/secjs-rlp/issues"
+    "url": "https://github.com/SECblock/secjs-rlp/issues"
   },
-  "homepage": "https://gitlab.com/MongoX-SEC/secjs-rlp#README"
+  "homepage": "https://github.com/SECblock/secjs-rlp#README",
+  "dependencies": {
+    "@sec-block/secjs-block": "^1.0.6"
+  }
 }

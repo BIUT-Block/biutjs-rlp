@@ -11,12 +11,3 @@ describe('RLP encoding (string):', function () {
     assert.equal(rlp.getLength(encodedSelf), 1)
   })
 })
-
-describe('SEC RLP test(unspecified JSON model)', function () {
-  let contents = fs.readFileSync('./test-json.json')
-
-  let contentsRlpEncode = rlp.jsonToRlp(contents)
-  let contentsJsonFormat = rlp.jsonKeyArray(contents)
-
-  assert.deepEqual(JSON.parse(rlp.rlpToJson(contentsRlpEncode, contentsJsonFormat)), JSON.parse(contents))
-})

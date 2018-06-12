@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SECblock/secjs-rlp.git"
+    "url": "git+https://github.com/SEC-block/secjs-rlp.git"
   },
   "keywords": [
     "secjs",
@@ -20,9 +20,9 @@
   "author": "Weihan",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/SECblock/secjs-rlp/issues"
+    "url": "https://github.com/SEC-block/secjs-rlp/issues"
   },
-  "homepage": "https://github.com/SECblock/secjs-rlp#README",
+  "homepage": "https://github.com/SEC-block/secjs-rlp#README",
   "dependencies": {
     "@sec-block/secjs-block": "^1.0.6",
     "describe": "^1.2.0"

@@ -24,7 +24,6 @@
   },
   "homepage": "https://github.com/SEC-block/secjs-rlp#README",
   "dependencies": {
-    "@sec-block/secjs-block": "^1.0.6",
     "describe": "^1.2.0"
   }
 }
